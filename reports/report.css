@@ -1,0 +1,418 @@
+.report-page {
+  text-transform: none;
+}
+
+.report-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem var(--gutter);
+  border-bottom: 1px solid var(--line);
+  background: rgba(244, 241, 233, 0.96);
+  backdrop-filter: blur(16px);
+  font-size: 0.8rem;
+}
+
+.report-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.report-shell {
+  width: min(100% - 2 * var(--gutter), 50rem);
+  margin: 0 auto;
+}
+
+.report-title {
+  padding: clamp(3rem, 7vw, 6rem) 0 3rem;
+}
+
+.report-kicker,
+.report-status {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  letter-spacing: 0.02em;
+}
+
+.report-kicker {
+  margin: 0 0 1.5rem;
+  color: var(--blue);
+}
+
+.report-title h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 5.5vw, 4.6rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  overflow-wrap: break-word;
+}
+
+.report-author {
+  margin: 1.8rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.report-status {
+  margin: 0;
+}
+
+.report-section {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 1.5rem;
+  font-size: clamp(1rem, 1.25vw, 1.08rem);
+  line-height: 1.85;
+}
+
+.report-section h2 {
+  margin: 0 0 1.4rem;
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.report-section p {
+  margin: 0 0 1.35rem;
+}
+
+.report-section p:last-child {
+  margin-bottom: 0;
+}
+
+.report-section strong {
+  font-weight: 700;
+}
+
+.experiments h3 {
+  margin: 1.5rem 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.results-figure > a {
+  display: block;
+}
+
+.results-table caption {
+  padding: 0 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.results-table td {
+  white-space: nowrap;
+}
+
+.results-table td:last-child {
+  color: #2864b3;
+}
+
+.results-table tfoot {
+  background: rgba(228, 237, 249, 0.4);
+}
+
+.methodology h3 {
+  margin: 2.8rem 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.45;
+}
+
+.methodology code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+.report-table-wrap {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.report-table th,
+.report-table td {
+  padding: 0.8rem 0.65rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.report-table thead th,
+.report-table tfoot th,
+.report-table tfoot td {
+  font-weight: 600;
+}
+
+.report-table thead th {
+  background: var(--paper-deep);
+}
+
+.report-table tbody th {
+  font-weight: 400;
+}
+
+.report-table small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  overflow-wrap: anywhere;
+}
+
+.training-settings th {
+  width: 60%;
+}
+
+.method-details {
+  margin: 1.4rem 0;
+  padding: 0.9rem 1.1rem;
+  border-left: 2px solid #abb8c7;
+  background: rgba(233, 229, 219, 0.45);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.method-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.method-details[open] summary {
+  margin-bottom: 0.9rem;
+}
+
+.method-figure {
+  margin: 2rem 0;
+  padding: clamp(0.8rem, 2vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fcfcf9;
+  break-inside: avoid;
+}
+
+.method-figure picture,
+.method-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.method-figure figcaption {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.method-figure figcaption strong {
+  color: var(--ink);
+}
+
+.report-equation {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+  padding: 1.15rem 0.6rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-family: Georgia, serif;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.report-equation sub {
+  font-size: 0.7em;
+}
+
+.deployment-flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.deployment-step {
+  display: grid;
+  gap: 0.1rem;
+  padding: 1rem 0.4rem;
+  border: 1px solid #c3c7c1;
+  border-radius: 8px;
+  background: #f0f1ed;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.deployment-step span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+}
+
+.deployment-step strong {
+  font-size: 0.95rem;
+}
+
+.deployment-step small {
+  font-size: 0.75rem;
+}
+
+.policy-step {
+  border-color: #a4b9d5;
+  background: #e4edf9;
+}
+
+.flow-arrow {
+  align-self: center;
+  color: #6c777e;
+}
+
+.method-figure .repeat-note {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.report-shell a {
+  color: var(--blue);
+}
+
+.report-page a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.citation {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.math {
+  white-space: nowrap;
+}
+
+.report-references {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.report-references ol {
+  padding-left: 1.6rem;
+}
+
+.report-references li {
+  padding-left: 0.5rem;
+  margin-bottom: 1.8rem;
+  scroll-margin-top: 6rem;
+  overflow-wrap: anywhere;
+}
+
+.report-references li:target {
+  background: var(--blue-soft);
+  outline: 0.5rem solid var(--blue-soft);
+}
+
+.report-references li p {
+  margin-bottom: 0.4rem;
+}
+
+.reference-links {
+  font-size: 0.8rem;
+}
+
+.report-end {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 560px) {
+  .report-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    font-size: 0.75rem;
+  }
+
+  .report-header nav {
+    gap: 1rem;
+  }
+
+  .report-title {
+    padding-top: 3rem;
+  }
+
+  .deployment-flow {
+    gap: 0.35rem;
+  }
+
+  .deployment-step small {
+    font-size: 0.65rem;
+  }
+
+  .deployment-step strong {
+    font-size: 0.8rem;
+  }
+}
+
+@media print {
+  .report-header,
+  .report-end,
+  .skip-link,
+  body::before {
+    display: none;
+  }
+
+  .report-page {
+    color: #000;
+    background: #fff;
+  }
+
+  .report-shell {
+    width: 100%;
+  }
+
+  .report-title {
+    padding-top: 0;
+  }
+
+  .report-title h1 {
+    font-size: 30pt;
+  }
+
+  .report-section {
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  .report-references li {
+    break-inside: avoid;
+  }
+}

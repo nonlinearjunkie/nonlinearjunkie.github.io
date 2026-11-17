@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 430" role="img" aria-labelledby="title desc">
+  <title id="title">Match the two predicted futures</title>
+  <desc id="desc">Two passes through the same frozen model: policy actions produce a policy forecast and recorded actions produce a fixed reference forecast. The mean absolute difference trains only the policy.</desc>
+  <defs><marker id="a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 6 3 0 6" fill="none" stroke="#6c777e" stroke-width="1.2"/></marker></defs>
+  <g font-family="Arial, sans-serif" text-anchor="middle" fill="#24343d">
+    <text x="185" y="27" font-size="15">Same current images</text>
+    <text x="185" y="49" font-size="12" fill="#63727b">One frozen RoboJEPA · two passes</text>
+    <rect x="12" y="73" width="346" height="96" rx="12" fill="#e4edf9" stroke="#a4b9d5"/>
+    <text x="69" y="108" font-size="14" font-weight="600">Policy</text><text x="69" y="129" font-size="14">actions</text>
+    <rect x="137" y="93" width="96" height="56" rx="8" fill="#fff" stroke="#a8b1ad"/>
+    <text x="185" y="118" font-size="14">RoboJEPA</text><text x="185" y="136" font-size="11" fill="#63727b">frozen</text>
+    <text x="301" y="108" font-size="14" font-weight="600">Policy</text><text x="301" y="129" font-size="12">future latents</text>
+    <rect x="12" y="191" width="346" height="96" rx="12" fill="#f5f1e8" stroke="#c7bcaa"/>
+    <text x="69" y="226" font-size="14" font-weight="600">Recorded</text><text x="69" y="247" font-size="14">actions</text>
+    <rect x="137" y="211" width="96" height="56" rx="8" fill="#fff" stroke="#a8b1ad"/>
+    <text x="185" y="236" font-size="14">RoboJEPA</text><text x="185" y="254" font-size="11" fill="#63727b">same model</text>
+    <text x="301" y="226" font-size="14" font-weight="600">Reference</text><text x="301" y="247" font-size="12">future latents</text><text x="301" y="270" font-size="11" fill="#79715f">fixed target</text>
+    <rect x="40" y="323" width="290" height="62" rx="10" fill="#e9efe7" stroke="#96a68c"/>
+    <text x="185" y="349" font-size="15" font-weight="600">Compare the two futures</text><text x="185" y="371" font-size="13">Mean L1 distance</text>
+    <text x="185" y="416" font-size="12" fill="#58779c">Only the policy is updated</text>
+  </g>
+  <g stroke="#6c777e" stroke-width="1.3" fill="none" marker-end="url(#a)">
+    <path d="M109 121H133"/><path d="M237 121H261"/>
+    <path d="M109 239H133"/><path d="M237 239H261"/>
+  </g>
+  <text x="185" y="310" font-family="Arial, sans-serif" font-size="15" fill="#6c777e" text-anchor="middle">↓</text>
+</svg>

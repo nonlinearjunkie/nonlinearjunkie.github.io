@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A real-time collision-avoidance extension that brings depth-camera obstacles into inverse kinematics for robot teleoperation." />
+    <meta name="author" content="Suraj Joshi" />
+    <title>Real-Time External Collision Avoidance for Robot Teleoperation — Suraj Joshi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./report.css" />
+    <link rel="stylesheet" href="./teleoperation-report.css" />
+  </head>
+  <body class="report-page">
+    <a class="skip-link" href="#report">Skip to report</a>
+    <header class="report-header">
+      <a class="report-home" href="../index.html#projects">← Back to projects</a>
+      <nav aria-label="Report sections">
+        <a href="#abstract">Abstract</a>
+        <a href="#introduction">Introduction</a>
+        <a href="#methodology">Methodology</a>
+        <a href="#references">References</a>
+      </nav>
+    </header>
+
+    <main class="report-shell" id="report">
+      <article>
+        <header class="report-title">
+          <p class="report-kicker">Technical report</p>
+          <h1>Real-Time External Collision Avoidance for Robot Teleoperation</h1>
+          <p class="report-author">Suraj Joshi</p>
+        </header>
+
+        <section class="report-section report-abstract" id="abstract" aria-labelledby="abstract-heading">
+          <h2 id="abstract-heading">Abstract</h2>
+          <p>VR robot teleoperation requires the robot to follow continuously changing end-effector targets while maintaining clearance between its links and the surrounding environment. We present a <strong>real-time external collision-avoidance extension</strong> to an existing inverse-kinematics (IK) pipeline. Depth images are projected into a 3D point cloud and transformed into the robot’s coordinate frame, providing an obstacle representation without predefined object models. In the evaluated implementation, distances between mesh-fitted arm spheres and the cloud define local constraints within the IK optimization. These constraints limit motion toward nearby obstacles while preserving feasible motion away from or along their surfaces. Integrating avoidance into IK allows the solver to adjust the proposed motion, addressing the repeated stopping observed with post-IK collision rejection alone.</p>
+          <p>The perception pipeline supports <strong>live and static point-cloud modes</strong>. Live mode refreshes observed geometry from incoming depth frames and removes points belonging to the robot; static mode captures the scene once and reuses the cloud throughout operation. Live updates accommodate visible scene changes, whereas static mode avoids repeated cloud processing for a fixed workspace. Image-space masks allow selected scene regions to be included or excluded from collision checking. In the evaluated static-cloud setup, the lightweight collision-avoidance extension runs within a dual-arm IK loop at approximately <strong>110 Hz</strong>, supporting real-time VR teleoperation.</p>
+        </section>
+
+        <section class="report-section" id="introduction" aria-labelledby="introduction-heading">
+          <h2 id="introduction-heading"><span>1.</span> Introduction</h2>
+          <p>During VR teleoperation, the operator relies on a streamed camera feed to view the robot’s workspace. Judging depth and the distance between the robot and surrounding objects can be difficult through a headset, especially when the camera provides only a limited view. The system therefore needs to check for collisions as the operator moves the robot. These checks must be fast enough to keep up with the operator’s movements without slowing the robot’s response.</p>
+          <p>To address this problem, we develop an external collision-aware teleoperation pipeline that incorporates surrounding obstacles as constraints in inverse kinematics (IK). These constraints allow the solver to adjust the requested motion to maintain clearance from observed obstacles while following the operator’s end-effector targets, supporting safer teleoperation.</p>
+          <p>To capture the surroundings, we use a depth camera and convert its depth images into a 3D point cloud. The cloud records the positions of observed surfaces relative to the robot, allowing the system to check the arms against nearby objects without predefined object models. Segmentation masks applied in image space let selected regions be included or excluded, giving control over which parts of the scene are treated as obstacles.</p>
+          <p>We initially used a post-IK collision guard: the solver proposed a movement, and the guard rejected it if it intersected an obstacle. This left the arm frozen when the operator kept requesting a target beyond the obstacle, because the solver continued proposing movements that the guard rejected. Incorporating obstacle constraints into IK lets the solver adjust the motion before it reaches the guard, allowing feasible movement along obstacle surfaces or away from them. The guard remains as a final check.</p>
+          <p>The point cloud can be updated live or captured once. Live updates reflect visible changes in the workspace, but require repeated depth processing and removal of robot points from each cloud. A static cloud avoids this repeated processing and is useful when the workspace stays fixed, but cannot reflect changes after capture. In the evaluated static-cloud setup, the collision-avoidance extension is lightweight enough to run within the IK loop at approximately <strong>110 Hz</strong>, supporting real-time teleoperation.</p>
+        </section>
+
+        <section class="report-section" id="methodology" aria-labelledby="methodology-heading">
+          <h2 id="methodology-heading"><span>2.</span> Methodology</h2>
+
+          <p>The operator moves the VR controllers to specify the desired position and orientation of each robot end effector. These controller poses are mapped into the robot’s coordinate frame and passed to an inverse-kinematics (IK) solver. The solver computes joint commands that move the end effectors toward their targets while respecting the robot’s joint and motion limits. This loop repeats as the operator moves the controllers. Our implementation uses the existing Mink IK framework <a class="citation" href="#ref-1" role="doc-biblioref">[1]</a>.</p>
+
+          <p>In a cluttered workspace, tracking these targets alone can bring the robot’s links into contact with nearby objects. To account for these obstacles, we explored two ways to add collision avoidance to the teleoperation loop:</p>
+          <ul>
+            <li><strong>Constraints inside IK.</strong> Obstacle constraints are included in the IK problem, allowing the solver to adjust the proposed motion while tracking the operator’s end-effector targets.</li>
+            <li><strong>Post-IK collision guard.</strong> The IK solver first proposes a motion. A separate guard checks it for collisions before execution and holds the affected arm if a collision is detected.</li>
+          </ul>
+
+          <section class="ik-pipeline" id="pipeline-ik" aria-labelledby="pipeline-ik-heading">
+            <h3 id="pipeline-ik-heading">2.1 External obstacle constraints inside IK</h3>
+            <p>In this pipeline, the operator’s end-effector poses are the IK tracking targets. To account for obstacles, we compute the clearance between spheres representing the arms and points representing nearby surfaces. These clearances are converted into inequality constraints that limit how far the arms can move toward obstacles during each IK update. The current implementation uses a point cloud captured before teleoperation and reuses it throughout the session.</p>
+
+            <figure class="report-flow-figure ik-flow-figure" id="ik-pipeline-diagram">
+              <picture>
+                <source media="(max-width: 900px)" srcset="./figures/teleoperation-ik-pipeline-mobile.svg" />
+                <img src="./figures/teleoperation-ik-pipeline.svg" width="1120" height="562" loading="lazy" alt="Depth capture leads to cloud preprocessing, clearance constraints, and the IK solver. Robot collision spheres feed the clearance calculation; VR target poses feed IK. A final guard checks the joint command, and the accepted command updates the modeled robot for the next step." />
+              </picture>
+              <figcaption><strong>Figure 1.</strong> From depth capture to collision-aware joint commands. The cloud is captured once; sphere positions, clearance constraints, and IK are updated in the control loop at approximately 110 Hz. The final guard checks the proposed motion before execution.</figcaption>
+            </figure>
+
+            <h4>Perception: capture the workspace</h4>
+            <p>We capture a depth image of the workspace using a depth camera, with the robot kept outside the camera’s view during capture. During teleoperation, we assume that only the robot’s arms move; the base, head, lift, and camera mount remain fixed. This keeps the transformation from the camera frame to the robot frame unchanged, allowing us to reuse a fixed static point cloud as long as the surrounding objects also remain stationary.</p>
+
+            <h4>Preprocessing: build the collision representation</h4>
+            <p>Depth values outside the valid range are discarded; in our case, this range is <strong>0.15–3 m</strong>. An optional mask in depth-image space specifies which pixels to include in or exclude from collision checking. The mask can be created manually or generated by a segmentation model. The retained depths are projected into 3D using the camera intrinsics, then transformed into the robot frame using the camera pose. The obstacle points and robot geometry must be expressed in the same frame so that their relative positions and clearances can be calculated correctly.</p>
+            <p>The raw cloud contains many closely spaced points on the same surfaces. To reduce the number of distance calculations, we divide space into 10 mm voxels and retain one point from each occupied voxel. Points outside the arms’ reach are also removed, since they cannot affect the arm motions considered here. The remaining points are stored in a k-d tree, which lets us find nearby obstacle points quickly without searching the entire cloud at every IK update.</p>
+            <p>To compare this cloud with the robot, we approximate the robot’s shape using collision spheres fitted around its mesh. Each sphere is attached to a robot link and moves with it. This makes clearance calculations simpler: we can measure distances between spheres and nearby cloud points instead of checking every triangle in the robot mesh. We add padding to the robot spheres and give each cloud point a small radius to account for gaps between sampled points and uncertainty in the depth measurements and geometry.</p>
+
+            <h4>IK input: turn clearance into constraints</h4>
+            <p>Once the robot and obstacles have a collision representation, we calculate the gap between them. At each IK update, forward kinematics uses the modeled joint positions to locate the robot’s collision spheres. The k-d tree then finds the nearest obstacle point for each sphere. We subtract the sphere and obstacle-point radii from the distance between their centres to obtain the clearance between their represented surfaces.</p>
+            <p>Spheres far from obstacles do not need to restrict the next movement. We therefore activate constraints only when clearance falls below 50 mm and use at most the 128 closest spheres. This focuses computation on nearby obstacles and keeps the size of the IK problem bounded.</p>
+            <p>We use the MuJoCo robot model <a class="citation" href="#ref-2" role="doc-biblioref">[2]</a> to estimate how a small change in joint angles would move each collision sphere. This relationship, called a Jacobian, helps us identify movements that would bring the sphere closer to an obstacle.</p>
+            <p>We then limit movement toward that obstacle. As the gap gets smaller, less movement in that direction is allowed. At our minimum clearance of 10 mm, further movement toward the obstacle is blocked. If the sphere is already within this margin, we request a small step away. The IK solver considers these limits together with the operator’s target, joint limits, velocity limits, and self-collision constraints.</p>
+
+            <h4>Motion generation: solve and repeat</h4>
+            <p>The IK solver now considers two things together: moving the end effectors toward the operator’s targets and respecting the limits on robot motion. Mink expresses this as a quadratic program and uses DAQP to solve it. The resulting joint velocity is applied over one control period to obtain the next joint command. Near an obstacle, the constraints can reduce motion toward it while leaving movement along its surface or away from it available.</p>
+            <p>This process repeats at approximately <strong>110 Hz</strong>. In the evaluated configuration, each update begins from the previous command accepted by the final collision guard. The cloud stays fixed, but the sphere positions, clearances, and constraints are recalculated as the modeled robot moves. This lets the solver respond to changing operator targets without rebuilding the environment representation.</p>
+            <p>A request to move away from an obstacle can sometimes conflict with other limits. If the solver cannot satisfy all requirements, it retries with the outward-movement requirement removed, while retaining the restriction against moving closer. If that attempt also fails, the robot is commanded to hold the starting configuration.</p>
+            <p>Each update produces only the next small movement, so a longer motion emerges from many successive IK steps. The solver may stop when reaching the target would require a different route around an obstacle; finding that route would require a separate path planner. Because the calculations use the modeled joint configuration, a physical arm that lags behind its commands can have a different clearance from the one predicted by IK.</p>
+          </section>
+
+          <section class="guard-pipeline" id="pipeline-guard" aria-labelledby="pipeline-guard-heading">
+            <h3 id="pipeline-guard-heading">2.2 Post-IK collision guard</h3>
+            <p>In this approach, the IK solver first proposes a movement toward the operator’s target. A separate guard then checks that movement against the obstacle cloud before the command is sent to the robot. When used on its own, the guard does not add external obstacle constraints to IK; it decides which arm commands can be executed.</p>
+
+            <figure class="report-flow-figure guard-flow-figure" id="guard-pipeline-diagram">
+              <picture>
+                <source media="(max-width: 900px)" srcset="./figures/teleoperation-guard-pipeline-mobile.svg" />
+                <img src="./figures/teleoperation-guard-pipeline.svg" width="1120" height="562" loading="lazy" alt="VR targets enter IK, which proposes a joint movement. The guard checks intermediate and final modeled poses against the obstacle cloud using robot collision spheres. A clear proposal is sent; a detected overlap holds the affected arm, and any remaining arm motion is rechecked. The accepted command becomes the next starting configuration." />
+              </picture>
+              <figcaption><strong>Figure 2.</strong> With a valid obstacle cloud, the active post-IK guard checks a movement after IK has generated it. A detected overlap holds the affected arm; the other arm moves only if its revised motion passes a second check.</figcaption>
+            </figure>
+
+            <h4>Perception: prepare the obstacle cloud</h4>
+            <p>The depth projection, robot-frame transformation, and collision-sphere representation follow the same principles as the first pipeline. The guard can use a saved static cloud or a live cloud. In live mode, points belonging to the robot are removed using the current robot state so that the robot is not treated as an external obstacle.</p>
+            <p>For fast collision checks, the cloud is stored in a collision-affording point tree (CAPT), using the implementation released with VAMP <a class="citation" href="#ref-3" role="doc-biblioref">[3]</a>. This structure answers whether a robot sphere overlaps the cloud. A static tree is built once. For live clouds, a separate process builds new trees, and the guard receives the latest available tree in the background. The arm-control loop therefore does not wait for each depth frame to be processed.</p>
+
+            <h4>IK output: propose the next movement</h4>
+            <p>Before running IK, we save the modeled joint configuration. The solver then computes a candidate command using the operator’s target and the robot’s existing limits. Together, the saved configuration and the candidate define the movement that the guard must check. As in the first pipeline, the starting configuration in these runs is the previous accepted command.</p>
+
+            <h4>Collision checking: inspect the movement between commands</h4>
+            <p>Checking only the final pose could miss an obstacle encountered on the way there. The guard therefore samples configurations between the starting and candidate joint positions. The default setting checks halfway through the movement and at its endpoint. At each sample, forward kinematics places the collision spheres, and the CAPT tests them against the obstacle cloud. The sphere queries are grouped into batches to reduce overhead.</p>
+            <p>An overlap at either sample marks the corresponding arm’s movement for rejection. This checks the padded collision representation directly; it does not use the first method’s clearance-based movement limits or ask IK to find a different motion.</p>
+
+            <h4>Execution: accept the command or hold an arm</h4>
+            <p>The guard makes the execution decision separately for each arm. A proposal with no detected overlap is passed to the robot. If one arm would collide, its command is replaced with its starting configuration. The other arm may still move, but holding one arm changes their combined motion, so the remaining movement is checked again against both the cloud and the robot’s collision geometry. If that check fails, or both arms would collide, both arms are held.</p>
+            <p>The accepted configuration is sent to the robot and retained for the next IK update. A hold therefore means resending the starting joint command. The guard can reject a movement, but it cannot redirect the arm around an obstacle. This explains the freezing observed when IK repeatedly proposed a blocked movement. In the first pipeline, the same guard is retained as a final check after obstacle constraints have already influenced IK.</p>
+          </section>
+        </section>
+
+        <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">
+          <h2 id="references-heading">References</h2>
+          <ol>
+            <li id="ref-1"><p>K. Zakka. “Mink: Python inverse kinematics based on MuJoCo.” Software library, 2026.</p><p class="reference-links"><a href="https://github.com/kevinzakka/mink">Repository and software citation</a> · <a href="https://kevinzakka.github.io/mink/">Documentation</a></p></li>
+            <li id="ref-2"><p>E. Todorov, T. Erez, and Y. Tassa. “MuJoCo: A Physics Engine for Model-Based Control.” In <em>Proceedings of the IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</em>, 2012, pp. 5026–5033.</p><p class="reference-links"><a href="https://doi.org/10.1109/IROS.2012.6386109">doi:10.1109/IROS.2012.6386109</a></p></li>
+            <li id="ref-3"><p>C. Ramsey, Z. Kingston, W. Thomason, and L. E. Kavraki. “Collision-Affording Point Trees: SIMD-Amenable Nearest Neighbors for Fast Motion Planning with Pointclouds.” In <em>Proceedings of Robotics: Science and Systems (RSS)</em>, 2024.</p><p class="reference-links"><a href="https://doi.org/10.15607/RSS.2024.XX.038">doi:10.15607/RSS.2024.XX.038</a> · <a href="https://github.com/KavrakiLab/vamp">VAMP implementation</a></p></li>
+            <li id="ref-4"><p>J. Ashkanazy, A. Spalter, J. Hays, L. Hiatt, R. Leontie, and C. G. Henshaw. “Collision-Free Inverse Kinematics Through QP Optimization (iKinQP).” arXiv:2308.15268, 2023.</p><p class="reference-links"><a href="https://doi.org/10.48550/arXiv.2308.15268">doi:10.48550/arXiv.2308.15268</a></p></li>
+          </ol>
+        </section>
+      </article>
+      <div class="report-end"><a href="../index.html#projects">← Back to selected projects</a><a href="#report">Back to top ↑</a></div>
+    </main>
+  </body>
+</html>

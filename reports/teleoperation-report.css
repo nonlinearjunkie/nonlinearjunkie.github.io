@@ -1,0 +1,91 @@
+.report-flow-figure {
+  width: min(68rem, calc(100vw - 2 * var(--gutter)));
+  max-width: none;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 2.5rem 0;
+  padding: clamp(0.6rem, 1.8vw, 1.4rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fcfcf9;
+}
+
+.report-flow-figure picture,
+.report-flow-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.report-flow-figure figcaption {
+  max-width: 50rem;
+  margin: 0.8rem auto 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.report-section h3 {
+  margin: 2rem 0 0.7rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.report-section h3 + p {
+  margin-top: 0;
+}
+
+.ik-pipeline h4,
+.guard-pipeline h4 {
+  margin: 1.7rem 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .ik-flow-figure picture,
+  .guard-flow-figure picture {
+    max-width: 26.25rem;
+    margin: 0 auto;
+  }
+}
+
+.collision-equation {
+  display: block;
+  overflow-x: auto;
+}
+
+.collision-equation math {
+  width: max-content;
+  min-width: 100%;
+  margin: 0;
+  padding: 0.25rem;
+}
+
+.report-table caption {
+  padding-bottom: 0.65rem;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.method-details code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .collision-equation {
+    font-size: 0.9rem;
+  }
+}
+
+@media print {
+  .report-flow-figure {
+    width: 100%;
+    left: 0;
+    transform: none;
+    break-inside: avoid;
+  }
+}

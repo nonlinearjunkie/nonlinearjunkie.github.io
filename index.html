@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Suraj Joshi works across robotics, software systems, and robot learning for real-world deployment."
+    />
+    <meta name="theme-color" content="#f4f1e9" />
+    <title>Suraj Joshi — Robotics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css?v=20261117" />
+    <script src="./script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" data-header>
+      <a class="wordmark" href="#home" aria-label="Back to top">
+        <span>SJ</span>
+        <span class="wordmark-text">Suraj Joshi</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span class="sr-only">Toggle navigation</span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav class="site-nav" id="site-nav" aria-label="Primary navigation">
+        <a href="#publications">Publications</a>
+        <a href="#projects">Projects</a>
+        <a href="#experience">Experience</a>
+        <a class="nav-contact" href="#contact">Contact <span aria-hidden="true">↓</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero section" id="home" data-section>
+        <div class="hero-copy">
+          <h1 class="reveal">suraj joshi.</h1>
+          <div class="hero-intro reveal">
+            <p>
+              i currently work on full-stack robotics at yondu ai, where we are deploying robots
+              in the real world, starting with warehouses in the logistics industry.
+            </p>
+            <p>
+              i have been exploring robotics for almost two years now. my work spans the control
+              stack (controllers, motion planning, and inverse kinematics), teleoperation stack
+              (exoskeleton-based teleoperation, vr teleoperation, and remote teleoperation systems),
+              and robot learning stack (imitation learning and reinforcement learning).
+            </p>
+            <p>
+              i also have hands-on experience with simulators and real robots, including single-arm
+              and bimanual systems and whole-body robots (wheeled robots and humanoids). i have
+              worked with multiple end effectors, including parallel-jaw grippers and dexterous hands.
+            </p>
+            <p>
+              before entering robotics, i worked in software development, mostly doing backend
+              engineering, building data pipelines, and working with distributed
+              systems. i am a big fan of startups and have been part of the founding teams of four
+              amazing startups.
+            </p>
+            <p>
+              i am currently interested in doing research on robot learning, with the goal of deploying
+              autonomous robots in the real world that match human-level accuracy, reliability, and throughput.
+            </p>
+          </div>
+        </div>
+
+        <div class="hero-foot reveal">
+          <a class="text-link" href="#publications">Continue <span aria-hidden="true">↓</span></a>
+        </div>
+
+        <div class="orbit-mark" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <i></i>
+        </div>
+      </section>
+
+      <section class="section publications" id="publications" data-section>
+
+        <div class="projects-intro">
+          <h2 class="reveal">Publications.</h2>
+        </div>
+
+        <div class="publication-list">
+          <article class="publication-entry reveal">
+            <a class="publication-media" href="https://roboengine.github.io/" aria-label="Visit the RoboEngine project">
+              <video autoplay loop muted playsinline preload="metadata" poster="./assets/publications/roboengine-poster.jpg" aria-label="RoboEngine robot segmentation and generated scene examples">
+                <source src="./assets/publications/roboengine-preview.mp4" type="video/mp4" />
+              </video>
+            </a>
+            <div class="publication-details">
+              <h3><a href="https://roboengine.github.io/">RoboEngine: Plug-and-Play Robot Data Augmentation with Semantic Robot Segmentation and Background Generation</a></h3>
+              <p class="publication-authors">Chengbo Yuan<sup>*</sup>, <strong>Suraj Joshi<sup>*</sup></strong>, Shaoting Zhu<sup>*</sup>, Hang Su, Hang Zhao, Yang Gao.</p>
+              <div class="publication-links" aria-label="RoboEngine resources">
+                <a href="https://roboengine.github.io/">project page</a>
+                <a href="https://arxiv.org/abs/2503.18738">arXiv</a>
+                <a href="https://github.com/michaelyuancb/roboengine">code</a>
+                <a href="https://huggingface.co/datasets/michaelyuanqwq/roboseg">dataset</a>
+              </div>
+              <p class="publication-venue">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2025 · Oral</p>
+              <p class="publication-note">* Equal contribution</p>
+              <p class="publication-description">A plug-and-play toolkit that combines robot segmentation and background generation to create physics- and task-aware training scenes. It helps imitation-learning policies generalize to new environments using demonstrations collected in a single scene.</p>
+            </div>
+          </article>
+          <article class="publication-entry reveal">
+            <a class="publication-media" href="https://github.com/varadsrivastava/accs2021" aria-label="View the mentalizing shapes research">
+              <img src="./assets/publications/mentalizing-shapes.jpg" alt="Functional connectivity analysis across brain regions studied in the shapes and empathy research" loading="lazy" />
+            </a>
+            <div class="publication-details">
+              <h3><a href="https://drive.google.com/file/d/13f0but6u5SQe_gL0B4xqjR85k3Ot84Kf/view">Can mentalizing shapes lead to empathy in humans?</a></h3>
+              <p class="publication-authors">V. Srivastava, M. Goel, <strong>Suraj Joshi</strong>, S. Shrestha.</p>
+              <div class="publication-links" aria-label="Mentalizing shapes paper resources">
+                <a href="https://drive.google.com/file/d/13f0but6u5SQe_gL0B4xqjR85k3Ot84Kf/view">abstract book</a>
+                <a href="https://github.com/varadsrivastava/accs2021">code</a>
+              </div>
+              <p class="publication-venue">7th Annual Conference of the Association for Cognitive Science in India (ACCS), 2021 · pp. 120–121</p>
+              <p class="publication-description">A study of whether attributing mental states to moving shapes can evoke empathy. The analysis compares brain activation and functional connectivity across regions associated with mentalizing and empathy.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section projects" id="projects" data-section>
+
+        <div class="projects-intro">
+          <h2 class="reveal">Selected projects.</h2>
+        </div>
+
+        <div class="project-list">
+          <article class="project reveal">
+            <div class="project-order">01</div>
+            <div class="project-body">
+              <div class="project-meta"><span>robot learning · world models</span><span>research project</span></div>
+              <h3>improving imitation learning policies with world-model supervision</h3>
+              <p>
+                can a policy learn from the predicted consequences of its actions, alongside
+                demonstrations? this project explores an additional training signal from a frozen
+                world model, comparing the futures predicted for the policy's actions with those
+                predicted for demonstrated actions.
+              </p>
+              <p class="project-note"><a class="text-link" href="./reports/world-model-supervision.html">read the technical report ↗</a></p>
+            </div>
+          </article>
+
+          <article class="project reveal">
+            <div class="project-order">02</div>
+            <div class="project-body">
+              <div class="project-meta"><span>robot teleoperation · collision avoidance</span><span>research project</span></div>
+              <h3>real-time external collision avoidance for robot teleoperation</h3>
+              <p>
+                this project brings external obstacles into a vr teleoperation inverse-kinematics
+                pipeline. depth-camera point clouds become constraints inside the ik solver, limiting
+                motion toward nearby obstacles while the arms track the operator’s targets. the
+                arm-control loop runs at approximately 110 hz.
+              </p>
+              <p class="project-note"><a class="text-link" href="./reports/teleoperation-collision-avoidance.html">read the technical report ↗</a></p>
+            </div>
+          </article>
+
+          <article class="project reveal" tabindex="0">
+            <div class="project-order">03</div>
+            <div class="project-body">
+              <div class="project-meta"><span>Project area</span><span>Year · Status</span></div>
+              <h3>Project title placeholder</h3>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.</p>
+            </div>
+            <span class="project-arrow" aria-hidden="true">↗</span>
+          </article>
+
+          <article class="project reveal" tabindex="0">
+            <div class="project-order">04</div>
+            <div class="project-body">
+              <div class="project-meta"><span>Project area</span><span>Year · Status</span></div>
+              <h3>Project title placeholder</h3>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.</p>
+            </div>
+            <span class="project-arrow" aria-hidden="true">↗</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="section work" id="experience" data-section>
+
+        <div class="experience-layout">
+          <h2 class="reveal">Work experience.</h2>
+          <div class="timeline reveal">
+            <article>
+              <div><strong>Company name</strong><span>Role · dates</span></div>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
+            </article>
+            <article>
+              <div><strong>Company name</strong><span>Role · dates</span></div>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
+            </article>
+            <article>
+              <div><strong>Company name</strong><span>Role · dates</span></div>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section contact" id="contact" data-section>
+
+        <div class="contact-inner">
+          <p class="eyebrow reveal">Contact</p>
+          <h2 class="reveal">Get in touch.</h2>
+          <div class="contact-actions reveal">
+            <a class="button" href="mailto:surajjoshi0123@gmail.com">surajjoshi0123@gmail.com <span aria-hidden="true">↗</span></a>
+            <div class="social-links">
+              <a href="./assets/suraj-joshi-resume.pdf" target="_blank" rel="noopener">Résumé</a>
+              <a href="https://scholar.google.com/citations?user=8vXcIKoAAAAJ&amp;hl=en">Google Scholar</a>
+              <a href="https://github.com/nonlinearjunkie">GitHub</a>
+              <a href="https://www.linkedin.com/in/suraj-joshi-577a60152/">LinkedIn</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>© <span data-year></span> Suraj Joshi</span>
+      <a href="#home">Back to top ↑</a>
+    </footer>
+  </body>
+</html>

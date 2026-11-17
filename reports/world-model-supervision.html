@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A technical report on anchored consequence supervision from a frozen world model for robot imitation learning." />
+    <meta name="author" content="Suraj Joshi" />
+    <title>Improving Imitation Learning Policies with World-Model Supervision — Suraj Joshi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./report.css" />
+    <link rel="stylesheet" href="./qualitative.css" />
+    <link rel="stylesheet" href="./methodology.css" />
+  </head>
+  <body class="report-page">
+    <a class="skip-link" href="#report">Skip to report</a>
+    <header class="report-header">
+      <a class="report-home" href="../index.html#projects">← Back to projects</a>
+      <nav aria-label="Report sections">
+        <a href="#abstract">Abstract</a>
+        <a href="#introduction">Introduction</a>
+        <a href="#methodology">Method</a>
+        <a href="#experiments">Experiments</a>
+        <a href="#conclusion">Conclusion</a>
+        <a href="#future-work">Future Work</a>
+        <a href="#references">References</a>
+      </nav>
+    </header>
+
+    <main class="report-shell" id="report">
+      <article>
+        <header class="report-title">
+          <p class="report-kicker">Technical report</p>
+          <h1>Improving Imitation Learning Policies with World-Model Supervision</h1>
+          <p class="report-author">Suraj Joshi</p>
+        </header>
+
+        <section class="report-section report-abstract" id="abstract" aria-labelledby="abstract-heading">
+          <h2 id="abstract-heading">Abstract</h2>
+          <p>Can a pretrained action-conditioned world model improve a robot policy by supervising the predicted consequences of its actions? We investigate this question by augmenting behavior cloning (BC) with an <strong>anchored consequence loss</strong>. Given the same current observation, a frozen RoboJEPA model predicts future latents for two action sequences: one proposed by the policy and one recorded in a demonstration. We minimize the difference between these predictions alongside the policy’s standard imitation loss. Gradients pass through the frozen world model to update the policy; the world model is used only during training.</p>
+          <p>We evaluate this approach using 900 demonstrations across three RoboCasa manipulation tasks and 60 matched simulator starting states. After 10,000 policy updates, BC+RoboJEPA achieves <strong>26/60 successes (43.3%)</strong>, compared with <strong>14/60 (23.3%)</strong> for BC-only, an improvement of 20 percentage points. These results offer early evidence that supervision from predicted action consequences can improve imitation learning.</p>
+        </section>
+
+        <section class="report-section" id="introduction" aria-labelledby="introduction-heading">
+          <h2 id="introduction-heading"><span>1.</span> Introduction</h2>
+          <p>Behavior cloning trains a robot policy to reproduce actions recorded in demonstrations <a class="citation" href="#ref-1" role="doc-biblioref" aria-label="Reference 1: Osa and colleagues, 2018">[1]</a>. Given camera observations, robot measurements, and a task instruction, the policy learns which commands a demonstrator would issue. This provides direct supervision in action space. However, the imitation objective does not explicitly measure what the predicted actions would do to the environment. For manipulation tasks, those consequences matter: a command must establish contact, move an object, or complete a placement.</p>
+          <p>An action-conditioned world model offers a possible source of additional supervision. It predicts how a scene will change after a proposed sequence of robot actions. For example, RoboJEPA predicts future latents and supports planning by evaluating candidate actions <a class="citation" href="#ref-2" role="doc-biblioref" aria-label="Reference 2: Zholus and colleagues, 2026">[2]</a>. This motivates a complementary question: <strong>can predictions from a frozen world model improve the training of an imitation policy?</strong></p>
+          <p>We study this question using a BC-Transformer policy and a pretrained RoboJEPA model. During training, the policy proposes an action sequence from the current observation. RoboJEPA then predicts the consequences of that sequence. The central design choice is how to turn this prediction into a useful training target.</p>
+          <p>Directly comparing a predicted future with the actual future observation can penalize the policy for errors made by the world model. Even the demonstrated actions may produce an imperfect forecast. We therefore use the world model’s prediction under the <strong>recorded actions</strong> as the reference. From the same current observation, we compare the predicted consequences of the policy’s actions with those of the demonstrated actions. We call this an <em>anchored consequence loss</em>.</p>
+          <p>This construction has a useful property: when the proposed actions equal the recorded actions, the consequence loss is zero, even if the world model’s forecast differs from the actual future. It does not guarantee physically accurate predictions or eliminate action-dependent model errors. Instead, it provides a model-based measure of consequence similarity that complements ordinary action imitation.</p>
+          <p>We test the approach on three tasks in RoboCasa <a class="citation" href="#ref-3" role="doc-biblioref" aria-label="Reference 3: Nasiriany and colleagues, 2024">[3]</a>: closing a cabinet door, pressing a coffee-machine button, and placing an object from a counter into a cabinet. Both policies use the same 900 training demonstrations, initial weights, and optimizer settings. Evaluation restores the same 20 held-out demonstration starts per task, with matched seeds and rollout horizons. The world model and its visual encoder remain frozen throughout policy training, and deployment uses only the trained policy.</p>
+          <p>We balance the two losses using dynamic gradient-ratio weighting. At 10,000 updates, BC+RoboJEPA improves aggregate success from 14/60 to 26/60, with gains on all three tasks. This is a comparison at a matched training budget; it does not establish an improvement in learning speed.</p>
+          <p>This report describes the method and experimental comparison. Further experiments are needed to establish whether the benefit persists across training seeds, tasks, and policy architectures.</p>
+        </section>
+
+        <section class="report-section methodology" id="methodology" aria-labelledby="methodology-heading">
+          <h2 id="methodology-heading">2. Methodology</h2>
+
+          <h3 id="method-data">2.1 Dataset: three RoboCasa tasks</h3>
+          <p>RoboCasa provides simulated kitchen environments and robot demonstrations with camera images, robot measurements, controller commands, and saved simulator states <a class="citation" href="#ref-3" role="doc-biblioref">[3]</a>. We use generated demonstrations for three tasks, preserving complete trajectories at their original control rate.</p>
+          <div class="report-table-wrap" role="region" aria-label="Dataset split by task" tabindex="0">
+            <table class="report-table">
+              <thead><tr><th scope="col">Task</th><th scope="col">What the robot must do</th><th scope="col">Train</th><th scope="col">Held out</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">CloseSingleDoor</th><td>Close a cabinet door.</td><td>300</td><td>20</td></tr>
+                <tr><th scope="row">CoffeePressButton</th><td>Press the coffee-machine button.</td><td>300</td><td>20</td></tr>
+                <tr><th scope="row">PnPCounterToCab</th><td>Pick an object from the counter and place it inside a cabinet.</td><td>300</td><td>20</td></tr>
+              </tbody>
+              <tfoot><tr><th scope="row" colspan="2">Total trajectories</th><td>900</td><td>60</td></tr></tfoot>
+            </table>
+          </div>
+          <p>The training episodes follow the dataset’s <code>300_demos</code> selection. For each task, we use the first 20 episodes in WorldToken’s published held-out list <a class="citation" href="#ref-4" role="doc-biblioref">[4]</a>. These episodes are separate from policy-training data. Their saved initial states let us evaluate both policies from identical scenes.</p>
+          <p>The controller runs at <strong>20 Hz</strong>: one action every <strong>0.05 seconds</strong>. Each learned action has seven values: three end-effector translation commands, three rotation commands, and one gripper command. Base, torso, and mode controls are constant in this subset and are appended before commands reach the simulator.</p>
+
+          <h3 id="method-policy">2.2 Imitation model: BC-Transformer</h3>
+          <p>Our action policy is the <strong>BC-Transformer baseline</strong> released with WorldToken, using its robomimic implementation <a class="citation" href="#ref-4" role="doc-biblioref">[4]</a><a class="citation" href="#ref-5" role="doc-biblioref">[5]</a>. Its job is to turn recent observations and an instruction into robot commands.</p>
+          <div class="io-pair">
+            <div><h4>Input</h4><p>Ten observed timesteps from three cameras: two external views and one wrist view. Robot measurements describe the arm, gripper, and base. A language embedding provides the task instruction.</p></div>
+            <div><h4>Output</h4><p>A chunk of <strong>10 future actions × 7 values</strong>. A five-component Gaussian mixture describes the possible commands at each future step.</p></div>
+          </div>
+          <p>The policy’s image encoders, Transformer, and action head are trained from matching random initialization in the two runs. The pretrained task-language embedding is fixed. During training, the recorded action chunk tells the policy what the demonstrator did.</p>
+
+          <h3 id="method-world-model">2.3 World model: frozen RoboJEPA</h3>
+          <p>RoboJEPA predicts <em>future latents</em> from current camera images and a sequence of robot actions <a class="citation" href="#ref-2" role="doc-biblioref">[2]</a>.</p>
+          <figure class="method-figure paper-figure">
+            <a href="./figures/robojepa-paper-figure3.png" target="_blank" rel="noopener" aria-label="Open the original RoboJEPA architecture figure at full resolution">
+              <img src="./figures/robojepa-paper-figure3.png" alt="Original RoboJEPA paper Figure 3. A frozen V-JEPA 2.1 visual encoder produces image features. The action-conditioned predictor is pretrained with teacher-forcing and autoregressive rollout losses." width="2032" height="1191" loading="lazy" />
+            </a>
+            <figcaption><strong>Figure 1.</strong> RoboJEPA architecture, from <a href="https://arxiv.org/html/2610.10515v1#S2.F3">Zholus et al., Figure 3</a> <a class="citation" href="#ref-2" role="doc-biblioref">[2]</a>. The predictor is labeled “trainable” for world-model pretraining. In our experiment, both the pretrained predictor and visual encoder remain frozen. <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</figcaption>
+          </figure>
+          <p>We use the released <strong>2B predictor checkpoint at 450,000 world-model training steps</strong>, with its V-JEPA 2.1 visual encoder. We load these weights directly and keep them fixed.</p>
+          <div class="io-pair">
+            <div><h4>Input in our experiment</h4><p>The current external-left and wrist-camera images, plus <strong>four ordered controller commands</strong>. The two branches use the same current images and model weights.</p></div>
+            <div><h4>Output</h4><p>Future latents <strong>0.20 seconds ahead</strong>: four commands × 0.05 seconds.</p></div>
+          </div>
+          <details class="method-details">
+            <summary>Exact command format</summary>
+            <p>The policy proposes seven values per command. We append the five fixed base, torso, and mode controls, clip commands to the valid range, and reorder them into RoboJEPA’s released controller-command layout. Four 12-value commands give 48 values, padded to its 64-value action token. The separate state input is zero-filled in this configuration; view and robot identifiers select the two cameras and the <code>franka_omron</code> embodiment.</p>
+            <p>For the differentiable branch, each proposed action is the mean of its highest-weight Gaussian component. The component choice is detached; gradients pass through the selected means. The native BC loss still trains the complete action distribution.</p>
+          </details>
+
+          <h3 id="method-training">2.4 Training flow</h3>
+          <p>Every training batch contains recorded observations and actions. The policy proposes a new action chunk. We compute its native imitation loss and an additional loss comparing predicted consequences. Both signals update the policy.</p>
+          <figure class="method-figure training-overview">
+            <a href="./figures/training-flow.svg" target="_blank" rel="noopener" aria-label="Open the full-size training-flow diagram">
+              <img src="./figures/training-flow.svg" alt="Training flow with two frozen RoboJEPA boxes: a policy-action pass and a recorded-action pass using the same weights and current images. Their future features are compared with anchored L1 loss. Native BC likelihood supervises all ten actions. The total loss sends gradients to the BC policy only." width="1840" height="1100" loading="lazy" />
+            </a>
+            <figcaption><strong>Figure 2.</strong> Training flow. The two RoboJEPA boxes show separate forward passes using the <strong>same frozen weights</strong>. BC supervises all ten actions; RoboJEPA compares the effects of the first four commands over 0.20 seconds. Future outputs are visual features, shown as grids. The dashed feedback arrow updates only the BC policy. <a href="./figures/training-flow.svg" target="_blank" rel="noopener">Open full-size figure</a> · <a href="./figures/training-flow.png" download>Download PNG</a>.</figcaption>
+          </figure>
+          <p>The imitation loss supervises <strong>all ten actions</strong>. The world-model loss uses only the <strong>first four actions</strong>, matching the 0.20-second forecast interval. Only samples with eligible complete action windows contribute to the consequence loss; the remaining samples retain BC supervision.</p>
+
+          <h3 id="method-loss">2.5 Loss functions: imitate actions and match consequences</h3>
+          <h4>Native imitation loss</h4>
+          <p>BC increases the probability assigned to the recorded commands. We preserve the baseline’s Gaussian-mixture negative log-likelihood (NLL), averaged over the batch and ten action steps:</p>
+          <div class="report-equation" role="math" aria-label="BC loss is the expected negative log likelihood of a recorded action, over demonstration samples and action steps.">
+            <span><var>L</var><sub>BC</sub> = 𝔼<sub>h,A*,k</sub>[−log <var>π</var><sub>θ</sub>(<var>a</var><sup>*</sup><sub>t+k</sub> | <var>h</var>, <var>k</var>)]</span>
+          </div>
+          <p>The expectation averages over demonstration samples and the ten action steps, sampled uniformly. Here, <var>h</var> contains the observations and instruction, <var>A</var><sup>*</sup> is the recorded chunk, and <var>a</var><sup>*</sup><sub>t+k</sub> is its command at step <var>k</var>.</p>
+          <h4>Anchored consequence loss</h4>
+          <p>A world model can make prediction errors even when given the correct demonstrated actions. Comparing the policy’s predicted future latents directly with the actual future could therefore penalize the policy for errors in the world model. The anchored loss instead compares two predictions from the same current images: one using the policy’s actions and one using the demonstrated actions. This gives the policy a reference within the same model and can reduce errors shared by both predictions.</p>
+          <figure class="method-figure">
+            <picture>
+              <source media="(max-width: 600px)" srcset="./figures/anchored-loss-mobile.svg" />
+              <img src="./figures/anchored-loss.svg" alt="Policy actions and recorded actions pass through the same frozen RoboJEPA from the same current observation. Compare their predicted futures with an L1 loss. The reference forecast is fixed." width="880" height="350" loading="lazy" />
+            </picture>
+            <figcaption><strong>Figure 3.</strong> Match the policy’s future latents to the recorded-action reference. Both come from the same frozen model.</figcaption>
+          </figure>
+          <div class="forecast-pair">
+            <p><strong>Policy future latents</strong><br/><span class="equation-inline"><var>ẑ</var><sub>policy</sub> = <var>F</var><sub>φ</sub>(<var>E</var><sub>ψ</sub>(<var>I</var><sub>t</sub>), <var>Â</var><sup>(4)</sup><sub>t</sub>)</span></p>
+            <p><strong>Reference future latents</strong><br/><span class="equation-inline"><var>ẑ</var><sub>ref</sub> = <var>F</var><sub>φ</sub>(<var>E</var><sub>ψ</sub>(<var>I</var><sub>t</sub>), <var>A</var><sup>*(4)</sup><sub>t</sub>)</span></p>
+          </div>
+          <p><var>E</var><sub>ψ</sub> is the frozen image encoder; <var>F</var><sub>φ</sub> is the frozen predictor, including command packing. <var>Â</var><sup>(4)</sup> contains the first four proposed actions and <var>A</var><sup>*(4)</sup> the corresponding recorded actions.</p>
+          <div class="report-equation" role="math" aria-label="Anchored loss is the expectation over eligible samples of the L1 difference between future latents, divided by their dimension D.">
+            <span><var>L</var><sub>anchor</sub> = 𝔼<sub>I,A*</sub>[<span class="fraction"><span>1</span><span><var>D</var></span></span> ‖<var>ẑ</var><sub>policy</sub> − sg(<var>ẑ</var><sub>ref</sub>)‖<sub>1</sub>]</span>
+          </div>
+          <p>The expectation is over eligible demonstration samples; <var>D</var> is the number of latent values. <code>sg</code> stops gradients through the reference. The target is another predicted future latent, not an encoded actual future image. Identical action blocks give zero loss. Shared prediction errors can cancel, but action-dependent errors can remain.</p>
+          <h4>Combined objective</h4>
+          <p>We train with both losses. The coefficient <var>λ</var><sub>t</sub> controls how much the consequence signal contributes at each training step.</p>
+          <div class="report-equation" role="math" aria-label="Total policy loss equals BC loss plus lambda times the anchored loss.">
+            <span><var>L</var><sub>total</sub> = <var>L</var><sub>BC</sub> + <var>λ</var><sub>t</sub> <var>L</var><sub>anchor</sub></span>
+          </div>
+
+          <h3 id="method-weighting">2.6 Dynamic loss weighting</h3>
+          <p>BC teaches the policy to copy demonstrated actions. The anchored loss adds guidance about their predicted effects. These losses measure different things, so their numerical values are not directly comparable. Giving them equal weights would not give them equal influence on training.</p>
+          <p>What matters is how strongly each loss pushes the policy to change—its <strong>gradient magnitude</strong>. If the consequence gradient is too large, it can overwhelm the demonstration signal, even though the world model is imperfect. If it is too small, the extra supervision has little effect. This balance can also change as the policy learns.</p>
+          <p>We therefore recalculate the weight at every update: turn it down when the consequence gradient is strong, and up when it is weak relative to BC. This keeps imitation as the main signal while giving the world model a controlled supporting role.</p>
+          <p>We first measure the two gradients over all trainable policy parameters, before gradient clipping:</p>
+          <div class="report-equation" role="math" aria-label="g BC is the policy gradient of BC loss, and g anchor is the policy gradient of anchored loss.">
+            <span><var>g</var><sub>BC</sub> = ∇<sub>θ</sub><var>L</var><sub>BC</sub> &nbsp;;&nbsp; <var>g</var><sub>anchor</sub> = ∇<sub>θ</sub><var>L</var><sub>anchor</sub></span>
+          </div>
+          <div class="report-equation ratio-equation" role="math" aria-label="Dynamic lambda is detached and capped at ten thousand; its uncapped value is one quarter of the BC gradient norm divided by the anchored gradient norm with an epsilon floor.">
+            <span><var>λ</var><sub>t</sub> = stopgrad <span class="math-bracket">[ min <span class="math-bracket">( 10<sup>4</sup>, &nbsp;0.25 × <span class="fraction"><span>‖<var>g</var><sub>BC</sub>‖<sub>2</sub></span><span>max(‖<var>g</var><sub>anchor</sub>‖<sub>2</sub>, 10<sup>−12</sup>)</span></span> ) </span>] </span></span>
+          </div>
+          <p>The rule targets a consequence gradient with <strong>25% of the BC gradient’s magnitude</strong>, when the floor and cap are inactive. For example, if BC’s gradient has magnitude 100, we scale the consequence gradient to 25. This is a balance of gradient strength, not a claim that 25% of learning comes from RoboJEPA. It also does not guarantee that the two gradients point in the same direction.</p>
+          <p>This choice draws on gradient-based loss balancing in GradNorm <a class="citation" href="#ref-6" role="doc-biblioref">[6]</a> and VQGAN <a class="citation" href="#ref-7" role="doc-biblioref">[7]</a>; the equation above specifies the rule used here.</p>
+          <details class="method-details">
+            <summary>Implementation details</summary>
+            <p>The norms are global L2 norms across all trainable policy parameters. The coefficient is recomputed each update without smoothing and detached before forming <var>L</var><sub>BC</sub> + <var>λ</var><sub>t</sub><var>L</var><sub>anchor</sub>. If either gradient norm is zero, the consequence coefficient is zero. The native optimizer and gradient clipping are retained. We also record gradient cosine similarity to measure whether the two signals agree in direction.</p>
+          </details>
+
+          <h3 id="method-inference">2.7 Inference</h3>
+          <figure class="method-figure inference-figure">
+            <div class="inference-pipeline" role="img" aria-label="Task language, ten camera-frame timesteps from three views, and robot state feed the trained BC-Transformer. It predicts one chunk of ten seven-value actions. Execute the first action, then refresh observations and repeat at 20 Hz.">
+              <div class="inference-inputs">
+                <div><strong>Language</strong><small>Task instruction</small></div>
+                <div><strong>Camera frames</strong><small>10 timesteps · 3 views</small></div>
+                <div><strong>Robot state</strong><small>End-effector pose, gripper, base</small></div>
+              </div>
+              <span class="inference-arrow" aria-hidden="true">→</span>
+              <div class="inference-node inference-policy"><strong>BC-Transformer</strong><small>Trained policy</small></div>
+              <span class="inference-arrow" aria-hidden="true">→</span>
+              <div class="inference-node"><strong>10-action chunk</strong><small>7 values per action</small></div>
+              <span class="inference-arrow" aria-hidden="true">→</span>
+              <div class="inference-node"><strong>Execute</strong><small>First action only</small></div>
+            </div>
+            <p class="inference-repeat">↶ Refresh observations and repeat at 20 Hz</p>
+            <figcaption><strong>Figure 4.</strong> Policy inputs and action execution at inference.</figcaption>
+          </figure>
+        </section>
+
+
+        <section class="report-section experiments" id="experiments" aria-labelledby="experiments-heading">
+          <h2 id="experiments-heading">3. Experiments</h2>
+          <h3>Task success in simulation</h3>
+          <p>We evaluate the policies after <strong>10,000 training updates</strong> on <strong>20 saved starts per task</strong>, giving <strong>60 trials overall</strong>. Every comparison uses the same initial states, seeds, and task horizons. Success is determined by the simulator’s task-completion checks.</p>
+          <p>BC+RoboJEPA uses <strong>dynamic gradient-ratio weighting</strong> for the anchored consequence loss.</p>
+
+          <figure class="method-figure results-figure">
+            <a href="./figures/task-success-10k.svg" target="_blank" rel="noopener" aria-label="Open the task-success chart at full size">
+              <img src="./figures/task-success-10k.svg" alt="Success after 10,000 updates: BC-only versus BC plus RoboJEPA with dynamic weighting. Door: 65 versus 80 percent. Coffee button: 0 versus 35 percent. Cabinet placement: 5 versus 15 percent. Overall: 23.3 versus 43.3 percent." width="1104" height="660" loading="lazy" />
+            </a>
+            <figcaption><strong>Figure 5.</strong> Task success after 10,000 policy updates on matched simulator starts. Labels show successful trials. BC+RoboJEPA uses dynamic weighting.</figcaption>
+          </figure>
+
+          <div class="report-table-wrap" role="region" aria-label="Task success after 10,000 updates" tabindex="0">
+            <table class="report-table results-table">
+              <caption>10,000 policy updates · Dynamic weighting for BC+RoboJEPA</caption>
+              <thead><tr><th scope="col">Task</th><th scope="col">BC-only</th><th scope="col">BC+RoboJEPA</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Close cabinet door</th><td>13/20 · 65%</td><td><strong>16/20 · 80%</strong></td></tr>
+                <tr><th scope="row">Press coffee button</th><td>0/20 · 0%</td><td><strong>7/20 · 35%</strong></td></tr>
+                <tr><th scope="row">Counter-to-cabinet placement</th><td>1/20 · 5%</td><td><strong>3/20 · 15%</strong></td></tr>
+              </tbody>
+              <tfoot><tr><th scope="row">Overall</th><td>14/60 · 23.3%</td><td><strong>26/60 · 43.3%</strong></td></tr></tfoot>
+            </table>
+          </div>
+          <p>BC+RoboJEPA completes 12 more trials than BC-only, a <strong>20-percentage-point increase</strong> in overall success. It improves performance on all three tasks, although cabinet placement remains difficult at 3/20 successes.</p>
+          <p>These results use one training seed and 60 matched evaluation trials. More seeds and tasks are needed to assess how consistently the improvement holds.</p>
+
+          <div class="qualitative-evaluation" id="qualitative-evaluation">
+            <h3>Qualitative comparisons</h3>
+            <p>The following are selected matched success/failure examples from the three tasks. All policies use 10k-update checkpoints; within each pair, the initial state, seed, camera, and playback speed are matched.</p>
+            <h4 class="qualitative-task-title" id="qualitative-cabinet">Counter-to-cabinet placement</h4>
+            <p>Instruction: <em>“Pick the mango from the counter and place it in the cabinet.”</em> Both 10k-update policies use the same recorded initial state and seed, with a 500-step evaluation horizon.</p>
+            <figure class="qualitative-figure" aria-labelledby="qualitative-caption">
+              <div class="qualitative-pair">
+                <div class="qualitative-card">
+                  <div class="qualitative-card-heading"><h4>BC-only</h4><span>Task incomplete</span></div>
+                  <video controls playsinline muted preload="metadata" poster="./videos/cabinet-start.jpg" width="640" height="640" aria-label="BC-only policy on cabinet placement, from the matched saved start. The target remains on the counter and the task is incomplete at 500 steps.">
+                    <source src="./videos/bc-only-cabinet.mp4" type="video/mp4" />
+                    Your browser does not support embedded video. <a href="./videos/bc-only-cabinet.mp4">Open the BC-only video.</a>
+                  </video>
+                  <p>The target object remains on the counter. The task is not completed within the <strong>500-step limit</strong>.</p>
+                  <a class="qualitative-download" href="./videos/bc-only-cabinet.mp4" download>Download video</a>
+                </div>
+                <div class="qualitative-card qualitative-method">
+                  <div class="qualitative-card-heading"><h4>BC+RoboJEPA</h4><span>Success</span></div>
+                  <video controls playsinline muted preload="metadata" poster="./videos/cabinet-start.jpg" width="640" height="640" aria-label="BC plus RoboJEPA on cabinet placement, from the same saved start. The policy places the mango inside the cabinet and succeeds at 234 steps.">
+                    <source src="./videos/bc-robojepa-lambda10-cabinet.mp4" type="video/mp4" />
+                    Your browser does not support embedded video. <a href="./videos/bc-robojepa-lambda10-cabinet.mp4">Open the BC plus RoboJEPA video.</a>
+                  </video>
+                  <p>The policy picks up the mango and places it inside the cabinet, completing the task in <strong>234 steps</strong>.</p>
+                  <a class="qualitative-download" href="./videos/bc-robojepa-lambda10-cabinet.mp4" download>Download video</a>
+                </div>
+              </div>
+              <figcaption id="qualitative-caption"><strong>Figure 6.</strong> BC-only and BC+RoboJEPA on the same held-out counter-to-cabinet start.</figcaption>
+            </figure>
+
+            <h4 class="qualitative-task-title" id="qualitative-door">Close the microwave door</h4>
+            <p>Instruction: <em>“Close the microwave door.”</em> Both 10k-update policies use the same recorded initial state and seed, with a 500-step evaluation horizon.</p>
+            <figure class="qualitative-figure" aria-labelledby="qualitative-door-caption">
+              <div class="qualitative-pair">
+                <div class="qualitative-card">
+                  <div class="qualitative-card-heading"><h4>BC-only</h4><span>Task incomplete</span></div>
+                  <video controls playsinline muted preload="metadata" poster="./videos/door-start.jpg" width="640" height="640" aria-label="BC-only: Close the microwave door, from the matched saved start. Task incomplete.">
+                    <source src="./videos/bc-only-door.mp4" type="video/mp4" />
+                    Your browser does not support embedded video. <a href="./videos/bc-only-door.mp4">Open video.</a>
+                  </video>
+                  <p>The policy does not complete the task within the <strong>500-step limit</strong>.</p>
+                  <a class="qualitative-download" href="./videos/bc-only-door.mp4" download>Download video</a>
+                </div>
+                <div class="qualitative-card qualitative-method">
+                  <div class="qualitative-card-heading"><h4>BC+RoboJEPA</h4><span>Success</span></div>
+                  <video controls playsinline muted preload="metadata" poster="./videos/door-start.jpg" width="640" height="640" aria-label="BC+RoboJEPA: Close the microwave door, from the matched saved start. Success.">
+                    <source src="./videos/bc-robojepa-door.mp4" type="video/mp4" />
+                    Your browser does not support embedded video. <a href="./videos/bc-robojepa-door.mp4">Open video.</a>
+                  </video>
+                  <p>The policy completes the task in <strong>251 steps</strong>, reproducing its original successful evaluation.</p>
+                  <a class="qualitative-download" href="./videos/bc-robojepa-door.mp4" download>Download video</a>
+                </div>
+              </div>
+              <figcaption id="qualitative-door-caption"><strong>Figure 7.</strong> BC-only and BC+RoboJEPA on the same held-out microwave-door start.</figcaption>
+            </figure>
+
+            <h4 class="qualitative-task-title" id="qualitative-coffee">Press the coffee-machine button</h4>
+            <p>Instruction: <em>“Press the button on the coffee machine to serve coffee.”</em> Both 10k-update policies use the same recorded initial state and seed, with a 300-step evaluation horizon.</p>
+            <figure class="qualitative-figure" aria-labelledby="qualitative-coffee-caption">
+              <div class="qualitative-pair">
+                <div class="qualitative-card">
+                  <div class="qualitative-card-heading"><h4>BC-only</h4><span>Task incomplete</span></div>
+                  <video controls playsinline muted preload="metadata" poster="./videos/coffee-wrist-start.jpg" width="640" height="640" aria-label="BC-only wrist view: Press the coffee-machine button, from the matched saved start. Task incomplete.">
+                    <source src="./videos/bc-only-coffee-wrist.mp4" type="video/mp4" />
+                    Your browser does not support embedded video. <a href="./videos/bc-only-coffee-wrist.mp4">Open video.</a>
+                  </video>
+                  <p>BC-only does not activate the coffee machine within the <strong>300-step limit</strong>.</p>
+                  <a class="qualitative-download" href="./videos/bc-only-coffee-wrist.mp4" download>Download video</a>
+                </div>
+                <div class="qualitative-card qualitative-method">
+                  <div class="qualitative-card-heading"><h4>BC+RoboJEPA</h4><span>Success</span></div>
+                  <video controls playsinline muted preload="metadata" poster="./videos/coffee-wrist-start.jpg" width="640" height="640" aria-label="BC+RoboJEPA wrist view: Press the coffee-machine button, from the matched saved start. Success.">
+                    <source src="./videos/bc-robojepa-coffee-wrist.mp4" type="video/mp4" />
+                    Your browser does not support embedded video. <a href="./videos/bc-robojepa-coffee-wrist.mp4">Open video.</a>
+                  </video>
+                  <p>BC+RoboJEPA activates the machine at <strong>step 58</strong> and completes the task at <strong>step 77</strong> after moving the gripper away.</p>
+                  <a class="qualitative-download" href="./videos/bc-robojepa-coffee-wrist.mp4" download>Download video</a>
+                </div>
+              </div>
+              <figcaption id="qualitative-coffee-caption"><strong>Figure 8.</strong> Wrist-camera comparison on the same held-out coffee-button start. The camera moves with the gripper. BC+RoboJEPA activates the machine and retreats; BC-only never activates it. Both recordings reproduce the original evaluation outcomes and termination steps.</figcaption>
+            </figure>
+          </div>
+
+        </section>
+
+        <section class="report-section" id="conclusion" aria-labelledby="conclusion-heading">
+          <h2 id="conclusion-heading">4. Conclusion</h2>
+          <p>We investigated whether a frozen action-conditioned world model can provide useful supervision for imitation learning. Our anchored consequence loss compares the predicted effects of policy actions with those of demonstrated actions, while preserving the policy’s native imitation objective.</p>
+          <p>In our three-task RoboCasa experiment, BC+RoboJEPA achieves <strong>26/60 successes</strong> after 10,000 updates, compared with <strong>14/60 for BC-only</strong>. This result supports further study of predicted consequences as a training signal. The world model is needed only during training; inference uses the policy alone.</p>
+        </section>
+
+        <section class="report-section" id="future-work" aria-labelledby="future-work-heading">
+          <h2 id="future-work-heading">5. Future Work</h2>
+          <p>Our next goal is to test whether the benefit extends beyond the current policy and three-task setting.</p>
+          <ul>
+            <li><strong>Multiple policies.</strong> Apply the same anchored supervision to other policy architectures, including diffusion policies, while retaining each policy’s native training loss.</li>
+            <li><strong>Multiple training seeds.</strong> Repeat matched baseline and augmented runs with several random seeds, and report average task success and variability.</li>
+            <li><strong>More tasks and generalization.</strong> Expand the task set and evaluate held-out scenes, objects, and task variations to test whether the improvement transfers beyond familiar training conditions.</li>
+            <li><strong>Real-world data.</strong> Test the method on a real-robot demonstration dataset, then evaluate on real hardware.</li>
+          </ul>
+        </section>
+
+        <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">
+          <h2 id="references-heading">References</h2>
+          <ol>
+            <li id="ref-1">
+              <p>Takayuki Osa, Joni Pajarinen, Gerhard Neumann, J. Andrew Bagnell, Pieter Abbeel, and Jan Peters. <a href="https://doi.org/10.1561/2300000053">An Algorithmic Perspective on Imitation Learning.</a> <em>Foundations and Trends in Robotics</em>, 7(1–2):1–179, 2018.</p>
+              <p class="reference-links"><a href="https://arxiv.org/abs/1811.06711">arXiv:1811.06711</a></p>
+            </li>
+            <li id="ref-2">
+              <p>Artem Zholus, Nicolas Beltran-Velez, Jianhao Yuan, Sarath Chandar, Tushar Nagarajan, Daniel Severo, Koustuv Sinha, Michal Drozdzal, Adriana Romero Soriano, Jeannette Bohg, Nicolas Ballas, and Mahmoud Assran. <a href="https://arxiv.org/abs/2610.10515">RoboJEPA: Scaling Robotic Latent World Models.</a> arXiv preprint arXiv:2610.10515, 2026.</p>
+              <p class="reference-links"><a href="https://robojepa.github.io/">Project page</a> · <a href="https://github.com/facebookresearch/robo_jepa">Code</a></p>
+            </li>
+            <li id="ref-3">
+              <p>Soroush Nasiriany, Abhiram Maddukuri, Lance Zhang, Adeet Parikh, Aaron Lo, Abhishek Joshi, Ajay Mandlekar, and Yuke Zhu. <a href="https://arxiv.org/abs/2406.02523">RoboCasa: Large-Scale Simulation of Everyday Tasks for Generalist Robots.</a> <em>Robotics: Science and Systems (RSS)</em>, 2024.</p>
+              <p class="reference-links"><a href="https://robocasa.ai/">Project page</a> · <a href="https://arxiv.org/abs/2406.02523">arXiv:2406.02523</a></p>
+            </li>
+            <li id="ref-4">
+              <p>Chunkai Yang, Andong Yang, Di Huang, Chao Gao, and Guyue Zhou. <a href="https://arxiv.org/abs/2608.22591v3">WorldToken: Time-First Sequence Modeling for Robotic Imitation Learning.</a> arXiv preprint arXiv:2608.22591, version 3, 2026.</p>
+              <p class="reference-links"><a href="https://arxiv.org/html/2608.22591v3#A3.SS4">BC-Transformer baseline (Appendix C.4)</a></p>
+            </li>
+            <li id="ref-5">
+              <p>Ajay Mandlekar, Danfei Xu, Josiah Wong, Soroush Nasiriany, Chen Wang, Rohun Kulkarni, Li Fei-Fei, Silvio Savarese, Yuke Zhu, and Roberto Martín-Martín. <a href="https://arxiv.org/abs/2108.03298">What Matters in Learning from Offline Human Demonstrations for Robot Manipulation.</a> <em>Conference on Robot Learning (CoRL)</em>, 2021.</p>
+              <p class="reference-links"><a href="https://robomimic.github.io/">robomimic framework</a></p>
+            </li>
+            <li id="ref-6">
+              <p>Zhao Chen, Vijay Badrinarayanan, Chen-Yu Lee, and Andrew Rabinovich. <a href="https://proceedings.mlr.press/v80/chen18a.html">GradNorm: Gradient Normalization for Adaptive Loss Balancing in Deep Multitask Networks.</a> <em>International Conference on Machine Learning (ICML)</em>, 2018.</p>
+            </li>
+            <li id="ref-7">
+              <p>Patrick Esser, Robin Rombach, and Björn Ommer. <a href="https://openaccess.thecvf.com/content/CVPR2021/html/Esser_Taming_Transformers_for_High-Resolution_Image_Synthesis_CVPR_2021_paper.html">Taming Transformers for High-Resolution Image Synthesis.</a> <em>IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)</em>, 2021.</p>
+              <p class="reference-links"><a href="https://arxiv.org/html/2012.09841v3#S3.SS1">Adaptive gradient weighting in VQGAN, Section 3.1</a></p>
+            </li>
+          </ol>
+        </section>
+      </article>
+      <div class="report-end"><a href="../index.html#projects">← Back to selected projects</a><a href="#report">Back to top ↑</a></div>
+    </main>
+  </body>
+</html>

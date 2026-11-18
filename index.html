@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20261118-photo-size" />
+    <link rel="stylesheet" href="./styles.css?v=20261118-project-stills" />
     <script src="./script.js" defer></script>
   </head>
   <body>
@@ -98,7 +98,7 @@
         </div>
 
         <div class="publication-list">
-          <article class="publication-entry reveal">
+          <article class="publication-entry reveal lift-row">
             <a class="publication-media" href="https://roboengine.github.io/" aria-label="Visit the RoboEngine project">
               <video autoplay loop muted playsinline preload="metadata" poster="./assets/publications/roboengine-poster.jpg" aria-label="RoboEngine robot segmentation and generated scene examples">
                 <source src="./assets/publications/roboengine-preview.mp4" type="video/mp4" />
@@ -118,7 +118,7 @@
               <p class="publication-description">A plug-and-play toolkit that combines robot segmentation and background generation to create physics- and task-aware training scenes. It helps imitation-learning policies generalize to new environments using demonstrations collected in a single scene.</p>
             </div>
           </article>
-          <article class="publication-entry reveal">
+          <article class="publication-entry reveal lift-row">
             <a class="publication-media" href="https://github.com/varadsrivastava/accs2021" aria-label="View the mentalizing shapes research">
               <img src="./assets/publications/mentalizing-shapes.jpg" alt="Functional connectivity analysis across brain regions studied in the shapes and empathy research" loading="lazy" />
             </a>
@@ -143,10 +143,12 @@
         </div>
 
         <div class="project-list">
-          <article class="project reveal">
-            <div class="project-order">01</div>
+          <article class="project reveal lift-row">
+            <a class="project-media" href="./reports/world-model-supervision.html" aria-label="Read the world-model supervision report">
+              <img src="./assets/projects/world-models.webp" width="640" height="640" loading="lazy" decoding="async" alt="Robot arm during a manipulation rollout in a RoboCasa kitchen" />
+            </a>
             <div class="project-body">
-              <div class="project-meta"><span>robot learning · world models</span><span>research project</span></div>
+              <div class="project-meta"><span>robot learning · world models</span></div>
               <h3>improving imitation learning policies with world-model supervision</h3>
               <p>
                 can a policy learn from the predicted consequences of its actions, alongside
@@ -158,30 +160,36 @@
             </div>
           </article>
 
-          <article class="project reveal">
-            <div class="project-order">02</div>
+          <article class="project reveal lift-row">
+            <a class="project-media" href="./reports/bidexoid.html" aria-label="Read the BiDexoid report">
+              <img src="./assets/projects/bidexoid.webp" width="628" height="484" loading="lazy" decoding="async" alt="A bimanual humanoid policy manipulating a mixer in simulation" />
+            </a>
             <div class="project-body">
-              <div class="project-meta"><span>dexterous manipulation · reinforcement learning</span><span>research project</span></div>
+              <div class="project-meta"><span>dexterous manipulation · reinforcement learning</span></div>
               <h3>bidexoid: bimanual dexterous manipulation</h3>
               <p>learning coordinated upper-body motion for bimanual dexterous manipulation from a single human reference. kinematic retargeting prepares the arm and finger motion, and reinforcement learning jointly adapts both to reproduce the demonstrated object motion and contacts.</p>
               <p class="project-note"><a class="text-link" href="./reports/bidexoid.html">read the technical report ↗</a></p>
             </div>
           </article>
 
-          <article class="project reveal">
-            <div class="project-order">03</div>
+          <article class="project reveal lift-row">
+            <a class="project-media" href="./reports/scene-aware-humanoid-motion-generation.html" aria-label="Read the scene-aware humanoid motion report">
+              <img src="./assets/projects/humanoid-motion.webp" width="640" height="360" loading="lazy" decoding="async" alt="Generated humanoid walking motion approaching stairs in simulation" />
+            </a>
             <div class="project-body">
-              <div class="project-meta"><span>humanoid motion · scene perception</span><span>research project</span></div>
+              <div class="project-meta"><span>humanoid motion · scene perception</span></div>
               <h3>scene-aware humanoid motion generation</h3>
               <p>conditioning a motion diffusion model on lidar geometry to generate a route and whole-body motion for the unitree g1. this project extends kimodo with scene encoders and terrain-relative motion, then chains local windows into longer kinematic motion sequences.</p>
               <p class="project-note"><a class="text-link" href="./reports/scene-aware-humanoid-motion-generation.html">read the technical report ↗</a></p>
             </div>
           </article>
 
-          <article class="project reveal">
-            <div class="project-order">04</div>
+          <article class="project reveal lift-row">
+            <a class="project-media" href="./reports/teleoperation-collision-avoidance.html" aria-label="Read the collision-avoidance report">
+              <img src="./assets/projects/collision-avoidance.webp" width="848" height="430" loading="lazy" decoding="async" alt="Teleoperation demo showing arm collision spheres and obstacle overlays" />
+            </a>
             <div class="project-body">
-              <div class="project-meta"><span>robot teleoperation · collision avoidance</span><span>research project</span></div>
+              <div class="project-meta"><span>robot teleoperation · collision avoidance</span></div>
               <h3>real-time external collision avoidance for robot teleoperation</h3>
               <p>
                 this project brings external obstacles into a vr teleoperation inverse-kinematics
@@ -196,23 +204,47 @@
       </section>
 
       <section class="section work" id="experience" data-section>
-
+        <h2 class="reveal">work experience.</h2>
         <div class="experience-layout">
-          <h2 class="reveal">Work experience.</h2>
-          <div class="timeline reveal">
-            <article>
-              <div><strong>Company name</strong><span>Role · dates</span></div>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
-            </article>
-            <article>
-              <div><strong>Company name</strong><span>Role · dates</span></div>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
-            </article>
-            <article>
-              <div><strong>Company name</strong><span>Role · dates</span></div>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
-            </article>
-          </div>
+          <p class="experience-note reveal">i feel incredibly lucky to be part of the teams at these organizations:</p>
+          <ol class="experience-list reveal" aria-label="Work experience, newest first">
+            <li>
+              <a class="experience-entry lift-row" href="https://www.yondu.ai/" target="_blank" rel="noopener noreferrer">
+                <img class="company-logo" src="./assets/companies/yondu.png" width="112" height="48" alt="" loading="lazy" decoding="async" />
+                <div>
+                  <h3>robotics @ <span class="experience-company">yondu ai</span></h3>
+                  <p>deploying robots in the real world.</p>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="experience-entry lift-row" href="https://www.niural.com/ai" target="_blank" rel="noopener noreferrer">
+                <img class="company-logo" src="./assets/companies/niural.svg" width="112" height="48" alt="" loading="lazy" decoding="async" />
+                <div>
+                  <h3>ai engineer @ <span class="experience-company">niural ai</span></h3>
+                  <p>building ai agents for hr, payroll, and compliance workflows.</p>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="experience-entry lift-row" href="https://matrice.ai/" target="_blank" rel="noopener noreferrer">
+                <img class="company-logo company-logo--matrice" src="./assets/companies/matrice.svg" width="112" height="48" alt="" loading="lazy" decoding="async" />
+                <div>
+                  <h3>founding engineer @ <span class="experience-company">matrice ai</span></h3>
+                  <p>building a no-code platform for training and deploying ai models.</p>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a class="experience-entry lift-row" href="https://fusemachines.com/" target="_blank" rel="noopener noreferrer">
+                <img class="company-logo" src="./assets/companies/fusemachines.svg" width="112" height="48" alt="" loading="lazy" decoding="async" />
+                <div>
+                  <h3>ml engineer associate @ <span class="experience-company">fusemachines</span></h3>
+                  <p>building document ai to automate manual document workflows.</p>
+                </div>
+              </a>
+            </li>
+          </ol>
         </div>
       </section>
 

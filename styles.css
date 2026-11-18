@@ -848,10 +848,7 @@ a:focus-visible,
 }
 
 .contact {
-  min-height: 85svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: clamp(3rem, 5vw, 5rem) var(--gutter) clamp(2.5rem, 4vw, 4rem);
   background: var(--ink);
   color: #fff;
 }
@@ -866,11 +863,11 @@ a:focus-visible,
 }
 
 .contact-actions {
-  display: flex;
-  margin-top: clamp(4rem, 8vw, 8rem);
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.4fr) minmax(0, 3fr);
+  margin-top: clamp(2rem, 3vw, 3rem);
   align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .button {
@@ -894,14 +891,43 @@ a:focus-visible,
 }
 
 .social-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  font-size: 0.78rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  font-size: 0.875rem;
 }
 
 .social-links a {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  text-align: center;
+}
+
+.contact-actions a {
+  transition: transform 180ms ease, background-color 180ms ease,
+    border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.contact-actions a:focus-visible {
+  outline-color: var(--blue-soft);
+  transform: translateY(-4px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .contact-actions a:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .social-links a:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
 }
 
 footer {
@@ -943,6 +969,19 @@ footer a {
 }
 
 @media (max-width: 1100px) {
+  .contact-actions {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .contact-actions .button {
+    width: min(100%, 24rem);
+  }
+
+  .social-links {
+    width: 100%;
+  }
+
   .project {
     grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
   }
@@ -1086,10 +1125,6 @@ footer a {
     gap: 6rem;
   }
 
-  .contact-actions {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 700px) {
@@ -1156,6 +1191,11 @@ footer a {
 
   .contact h2 {
     font-size: clamp(2.8rem, 13vw, 4rem);
+  }
+
+  .social-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
   .button {

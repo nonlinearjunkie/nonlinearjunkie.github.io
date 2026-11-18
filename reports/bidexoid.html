@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="BiDexoid extends DexMachina with arm inverse kinematics and joint arm-and-finger policy learning for bimanual manipulation on the Adam U humanoid." />
+    <meta name="author" content="Suraj Joshi" />
+    <title>BiDexoid: Bimanual Dexterous Manipulation with Upper-Body Control — Suraj Joshi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&amp;family=Manrope:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./report.css" />
+    <link rel="stylesheet" href="./bidexoid-report.css" />
+    <script src="./bidexoid-videos.js" defer></script>
+  </head>
+  <body class="report-page">
+    <a class="skip-link" href="#report">Skip to report</a>
+    <header class="report-header">
+      <a class="report-home" href="../index.html#projects">← Back to projects</a>
+      <nav aria-label="Report sections">
+        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#demonstrations">Videos</a><a href="#references">References</a>
+      </nav>
+    </header>
+    <main class="report-shell bidexoid-report" id="report">
+      <article>
+        <header class="report-title">
+          <p class="report-kicker">Technical report</p>
+          <h1>BiDexoid: Bimanual Dexterous Manipulation with Upper-Body Control</h1>
+          <p class="report-author">Suraj Joshi</p>
+        </header>
+
+        <section class="report-section report-abstract" id="abstract" aria-labelledby="abstract-heading">
+          <h2 id="abstract-heading">Abstract</h2>
+          <p>Transferring a human manipulation demonstration to a humanoid requires coordinating the arms that position the hands with the fingers that make contact. We present <strong>BiDexoid</strong>, an extension of DexMachina that learns this coordination from a single human hand–object demonstration. Finger retargeting and arm inverse kinematics produce a robot reference, which is refined in simulation and paired with contact targets. A reinforcement-learning policy then controls both arms and dexterous hands on the Adam U humanoid. Training combines object-motion, imitation, and contact guidance with a curriculum that gradually reduces assistance applied to the object. The extension brings the robot’s connected arm-and-hand dynamics into policy learning. This report describes the simulation pipeline and selected reference-versus-policy recordings.</p>
+        </section>
+
+        <section class="report-section" id="introduction" aria-labelledby="introduction-heading">
+          <h2 id="introduction-heading"><span>1.</span> Introduction</h2>
+          <p>A human demonstration shows how an object should move and where the hands make contact. Reproducing it on a humanoid also requires moving the shoulders, elbows, and wrists into suitable configurations. Differences in arm reach, joint limits, and hand geometry mean that copying the human motion alone may not produce the intended interaction.</p>
+          <p>DexMachina learns manipulation policies from human demonstrations using floating dexterous hands, object-motion targets, and a curriculum of gradually reduced object assistance <a class="citation" href="#ref-1" role="doc-biblioref">[1]</a>. Its arm-feasibility demonstration applies IK to the wrist motions produced by a learned hand policy. BiDexoid extends the learning problem to the attached arms: <strong>IK prepares the reference before training, and the policy then learns arm and finger control together.</strong></p>
+          <p>The robot is represented as one connected entity in the physics simulator. Its wrist motion follows from the arm joints, and the policy learns corrections through interaction with the object. The implementation uses a fixed-base Adam U upper body, with the torso and neck held at fixed joint targets while both arms and hands are controlled.</p>
+        </section>
+
+        <section class="report-section methodology" id="methodology" aria-labelledby="methodology-heading">
+          <h2 id="methodology-heading"><span>2.</span> Methodology</h2>
+          <p>The pipeline first converts the human demonstration into a robot reference and contact targets. It then trains a feedback policy in simulation, using those references to guide manipulation.</p>
+
+          <figure class="bidex-figure" id="pipeline-figure">
+            <picture><source media="(max-width: 760px)" srcset="./figures/bidexoid-pipeline-mobile.svg" /><img src="./figures/bidexoid-pipeline.svg" width="1120" height="460" loading="lazy" alt="A human hand-object demonstration supplies finger retargeting and wrist targets. Arm IK, physics refinement, and contact mapping prepare a robot reference. PPO then learns a joint arm-and-finger policy while assistance on the object decreases." /></picture>
+            <figcaption><strong>Figure 1.</strong> Reference preparation and arm-and-finger policy learning. Hand illustrations adapted from DexMachina <a class="citation" href="#ref-1">[1]</a>; humanoid images from our reference and policy recordings.</figcaption>
+          </figure>
+
+          <h3 id="demonstration-data">2.1 Demonstration and robot representation</h3>
+          <p>Each training run starts from a selected ARCTIC demonstration clip <a class="citation" href="#ref-2" role="doc-biblioref">[2]</a>. The input includes human hand joints, the object’s position and orientation, its articulation state, and hand–object contact annotations. The object trajectory defines the desired task outcome; the hand motion and contacts provide guidance for reaching it.</p>
+          <p>The Adam U model has seven controlled arm joints and twelve controlled finger joints per side. One policy therefore outputs <strong>38 actions: 14 for the arms and 24 for the fingers</strong>. Five torso and neck joints remain at zero targets and are excluded from the policy’s action space.</p>
+
+          <h3 id="kinematic-retargeting">2.2 Finger retargeting and arm IK</h3>
+          <p>We use <em>dex-retargeting</em> to map the demonstrated hand geometry to the robot’s finger joints <a class="citation" href="#ref-3" role="doc-biblioref">[3]</a>. The hand-retargeting stage also supplies a desired position and orientation for each wrist. These poses become targets for the humanoid arms.</p>
+          <p>IK converts each wrist target into shoulder, elbow, and wrist joint angles. Frames are processed sequentially, using the previous solution to initialize the next solve, and the arm trajectory is smoothed afterward. The implementation supports Pink/Pinocchio and Genesis IK backends. Combining the arm solutions with the finger trajectories produces a reference for the connected robot.</p>
+
+          <h3 id="physics-and-contacts">2.3 Physics refinement and contact mapping</h3>
+          <p>The kinematic reference is refined in Genesis. Each demonstration frame is assigned a parallel simulation environment, with the object held at that frame’s demonstrated state. Joint-position controllers drive the robot toward the reference while the simulator accounts for joint limits and enabled collisions. The resulting robot states are saved as the reference used for learning.</p>
+          <p>Human contact annotations are then mapped to the robot’s hand collision links. For each frame, the mapper finds the nearest link using the centres of its collision bounding boxes and groups contacts by hand, robot link, and object part. Contact targets remain aligned with the selected demonstration frames. These targets guide where contact should occur during policy training.</p>
+
+          <h3 id="policy-learning">2.4 Joint arm-and-finger policy learning</h3>
+          <p>A single policy is trained with Proximal Policy Optimization (PPO) in parallel Genesis environments <a class="citation" href="#ref-4" role="doc-biblioref">[4]</a>. Its state observations include robot joint positions and velocities, joint-target errors, hand keypoints, wrist poses, object state, and progress through the demonstration.</p>
+          <p>In the hybrid action mode used by the training examples, <strong>arm actions adjust the reference joint angles, while finger actions specify joint-position targets within their limits</strong>. Targets are smoothed, bounded by the robot’s joint limits, and sent to PD controllers. The simulator advances, the robot and object states are read again, and the policy makes the next prediction. The rollout commands arm joints directly; it does not solve a new arm IK problem at every policy step.</p>
+          <p>The learning signals serve complementary roles:</p>
+          <div class="report-table-wrap" role="region" aria-label="Policy learning signals" tabindex="0">
+            <table class="report-table bidex-reward-table">
+              <thead><tr><th scope="col">Signal</th><th scope="col">What it encourages</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Object motion</th><td>Track the demonstrated object position, orientation, and articulation.</td></tr>
+                <tr><th scope="row">Hand and wrist imitation</th><td>Keep robot hand keypoints and wrist poses near the retargeted reference.</td></tr>
+                <tr><th scope="row">Contact guidance</th><td>Match the mapped hand–object contact locations on each object part.</td></tr>
+                <tr><th scope="row">Joint-reference guidance</th><td>Keep commanded joint targets near the reference trajectory.</td></tr>
+                <tr><th scope="row">Regularization</th><td>Penalize large actions and, when enabled, excessive contact forces.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 id="assistance-curriculum">2.5 Gradually reducing object assistance</h3>
+          <p>Early in training, a missed grasp can cause the object to fall or move away before the policy reaches later parts of the demonstration. Following DexMachina’s curriculum, a virtual controller initially helps the object follow its reference trajectory <a class="citation" href="#ref-1" role="doc-biblioref">[1]</a>. This gives the policy opportunities to learn the required sequence of motions and contacts.</p>
+          <p>The curriculum reduces the controller’s gains and force limits as training progresses, ultimately targeting zero assistance. The policy must increasingly produce the object motion through its own arm-and-finger interactions. The assistance acts on the object; the robot continues to use its joint controllers throughout training.</p>
+        </section>
+
+        <section class="report-section" id="demonstrations" aria-labelledby="demonstrations-heading">
+          <h2 id="demonstrations-heading"><span>3.</span> Reference and policy rollouts</h2>
+          <p>The reference recordings show demonstration-derived target motion on the robot. The policy recordings show the learned upper-body controller acting in simulation. The recordings use different camera angles and durations.</p>
+
+          <figure class="bidex-video-figure" id="box-comparison" aria-labelledby="box-caption">
+            <div class="bidex-video-heading"><h3>Box manipulation</h3><button type="button" data-compare-play aria-label="Play box comparison">Play comparison</button></div>
+            <div class="bidex-video-pair">
+              <div><h4>Reference playback</h4><video controls playsinline muted preload="none" poster="./videos/bidexoid/box-reference.jpg" width="654" height="550" aria-label="Box manipulation: demonstration-derived robot reference"><source src="./videos/bidexoid/box-reference.mp4" type="video/mp4" /><a href="./videos/bidexoid/box-reference.mp4">Open reference video</a></video></div>
+              <div><h4>Learned policy</h4><video controls playsinline muted preload="none" poster="./videos/bidexoid/box-policy.jpg" width="600" height="472" aria-label="Box manipulation: learned arm-and-finger policy rollout"><source src="./videos/bidexoid/box-policy.mp4" type="video/mp4" /><a href="./videos/bidexoid/box-policy.mp4">Open policy video</a></video></div>
+            </div>
+            <figcaption id="box-caption"><strong>Figure 2.</strong> Reference playback and policy rollout for the articulated box.</figcaption>
+          </figure>
+
+          <figure class="bidex-video-figure" id="mixer-comparison" aria-labelledby="mixer-caption">
+            <div class="bidex-video-heading"><h3>Mixer manipulation</h3><button type="button" data-compare-play aria-label="Play mixer comparison">Play comparison</button></div>
+            <div class="bidex-video-pair">
+              <div><h4>Reference playback</h4><video controls playsinline muted preload="none" poster="./videos/bidexoid/mixer-reference.jpg" width="600" height="472" aria-label="Mixer manipulation: demonstration-derived robot reference"><source src="./videos/bidexoid/mixer-reference.mp4" type="video/mp4" /><a href="./videos/bidexoid/mixer-reference.mp4">Open reference video</a></video></div>
+              <div><h4>Learned policy</h4><video controls playsinline muted preload="none" poster="./videos/bidexoid/mixer-policy.jpg" width="628" height="484" aria-label="Mixer manipulation: learned arm-and-finger policy rollout"><source src="./videos/bidexoid/mixer-policy.mp4" type="video/mp4" /><a href="./videos/bidexoid/mixer-policy.mp4">Open policy video</a></video></div>
+            </div>
+            <figcaption id="mixer-caption"><strong>Figure 3.</strong> Reference playback and policy rollout for the articulated mixer.</figcaption>
+          </figure>
+        </section>
+
+        <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">
+          <h2 id="references-heading">References</h2>
+          <ol>
+            <li id="ref-1"><p>M. Zhao, Y. Hou, D. Fox, Y. Narang, A. Mandlekar, and S. Song. “DexMachina: Functional Retargeting for Bimanual Dexterous Manipulation.” ICML, 2026.</p><p class="reference-links"><a href="https://proceedings.mlr.press/v306/mandi26a.html">Paper</a> · <a href="https://project-dexmachina.github.io/">Project</a></p></li>
+            <li id="ref-2"><p>Z. Fan, O. Taheri, D. Tzionas, M. Kocabas, M. Kaufmann, M. J. Black, and O. Hilliges. “ARCTIC: A Dataset for Dexterous Bimanual Hand-Object Manipulation.” CVPR, 2023.</p><p class="reference-links"><a href="https://arctic.is.tuebingen.mpg.de/">Project and paper</a></p></li>
+            <li id="ref-3"><p>Dexsuite contributors. <em>dex-retargeting.</em> Human-to-robot hand motion retargeting.</p><p class="reference-links"><a href="https://github.com/dexsuite/dex-retargeting">Official implementation</a></p></li>
+            <li id="ref-4"><p>J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov. “Proximal Policy Optimization Algorithms.” arXiv:1707.06347, 2017.</p><p class="reference-links"><a href="https://arxiv.org/abs/1707.06347">Paper</a></p></li>
+          </ol>
+        </section>
+      </article>
+      <div class="report-end"><a href="../index.html#projects">← Back to selected projects</a><a href="#report">Back to top ↑</a></div>
+    </main>
+  </body>
+</html>

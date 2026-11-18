@@ -1,0 +1,124 @@
+.bidexoid-report section,
+.bidexoid-report h3,
+.bidexoid-report figure {
+  scroll-margin-top: 7rem;
+}
+
+.bidex-figure,
+.bidex-video-figure {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(70rem, calc(100vw - 2 * var(--gutter)));
+  margin: 2.5rem 0;
+}
+
+.bidex-figure {
+  padding: clamp(0.7rem, 1.7vw, 1.3rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fcfcf9;
+}
+
+.bidex-figure img,
+.bidex-figure picture {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.bidex-figure figcaption,
+.bidex-video-figure figcaption {
+  max-width: 50rem;
+  margin: 1rem auto 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.bidex-reward-table {
+  min-width: 31rem;
+}
+
+.bidex-reward-table tbody th {
+  width: 30%;
+  font-weight: 600;
+}
+
+.bidex-video-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.bidex-video-heading h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.bidex-video-heading button {
+  flex-shrink: 0;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.bidex-video-heading button:hover {
+  background: var(--paper-deep);
+}
+
+.bidex-video-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+
+.bidex-video-pair h4 {
+  margin: 0 0 0.7rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.bidex-video-pair video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #17232e;
+}
+
+@media (max-width: 760px) {
+  .bidex-figure picture {
+    max-width: 29rem;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .bidex-video-pair {
+    grid-template-columns: 1fr;
+    gap: 1.3rem;
+  }
+}
+
+@media print {
+  .bidex-figure,
+  .bidex-video-figure {
+    left: 0;
+    transform: none;
+    width: 100%;
+    break-inside: avoid;
+  }
+  .bidex-video-heading button {
+    display: none;
+  }
+}

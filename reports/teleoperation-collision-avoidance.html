@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../styles.css" />
     <link rel="stylesheet" href="./report.css" />
-    <link rel="stylesheet" href="./teleoperation-report.css" />
+    <link rel="stylesheet" href="./teleoperation-report.css?v=20261117-experiments" />
   </head>
   <body class="report-page">
     <a class="skip-link" href="#report">Skip to report</a>
@@ -21,6 +21,7 @@
         <a href="#abstract">Abstract</a>
         <a href="#introduction">Introduction</a>
         <a href="#methodology">Methodology</a>
+        <a href="#experiments">Experiments</a>
         <a href="#references">References</a>
       </nav>
     </header>
@@ -119,6 +120,137 @@
             <p>The guard makes the execution decision separately for each arm. A proposal with no detected overlap is passed to the robot. If one arm would collide, its command is replaced with its starting configuration. The other arm may still move, but holding one arm changes their combined motion, so the remaining movement is checked again against both the cloud and the robot’s collision geometry. If that check fails, or both arms would collide, both arms are held.</p>
             <p>The accepted configuration is sent to the robot and retained for the next IK update. A hold therefore means resending the starting joint command. The guard can reject a movement, but it cannot redirect the arm around an obstacle. This explains the freezing observed when IK repeatedly proposed a blocked movement. In the first pipeline, the same guard is retained as a final check after obstacle constraints have already influenced IK.</p>
           </section>
+        </section>
+
+        <section class="report-section collision-experiments" id="experiments" aria-labelledby="experiments-heading">
+          <h2 id="experiments-heading"><span>3.</span> Experiments</h2>
+          <p>We tested both pipelines on the physical robot with one operator in VR. The operator approached a shelf, pushed the end-effector targets toward obstacles, pulled back, and tried to reach into storage bins. We compared how the arms stopped and resumed motion, and whether the collision representation left enough room to pass through the opening.</p>
+
+          <h3 id="experiment-setup">3.1 Setup and measurements</h3>
+          <p>The setup used two seven-joint RealMan RM75B arms, a head-mounted Intel RealSense D435 depth camera, and an NVIDIA Jetson AGX Orin running the control loop. The robot stood in front of a shelf with three open bins. Its base, head, lift, and camera mount stayed fixed.</p>
+          <p>Before teleoperation, we captured a depth image with the arms out of view. A mask selected the upper shelf beam, the bin fronts, and the lower beam as obstacles. After 10 mm voxel downsampling, the static cloud contained about 4,000 points. To reach into a bin, a hand had to pass through a gap approximately <strong>25–27 cm high</strong> between the bin fronts and the upper beam.</p>
+          <p>We recorded five conditions: no active avoidance, constraints inside IK with a final guard, and the guard alone. We tested each avoidance pipeline with two robot representations:</p>
+          <ul>
+            <li><strong>Mesh-fitted spheres:</strong> 1,398 small spheres, with radii of 1.6–4.5 cm, fitted around the arm meshes.</li>
+            <li><strong>Box-cover spheres:</strong> 49 larger spheres, with radii of 5.2–10.8 cm, enclosing the robot’s coarser collision boxes.</li>
+          </ul>
+          <p>All conditions used a 110 Hz control loop, 3 mm sphere padding, a 12 mm radius around each obstacle point, and two guard samples per movement. The IK constraints used a 10 mm minimum clearance and activated within 50 mm. Each update started from the previous accepted command. In the baseline, the guard logged its checks but did not block commands.</p>
+
+          <dl class="experiment-measures">
+            <div><dt>Clearance</dt><dd>The smallest gap between the obstacle cloud and the padded arm spheres placed at the <em>measured</em> joint angles. We use the same mesh-fitted model to measure every run, even when the controller uses box-cover spheres. Negative values mean the padded model overlaps the cloud; they do not directly measure physical contact.</dd></div>
+            <div><dt>Obstacle stop</dt><dd>The operator holds the grip, the end effector is more than 3 cm from its target, and its speed stays below 1 cm/s for at least 0.3 s. The analysis attributes the blocked movement to an external-obstacle IK constraint or the guard. Stops caused by existing self-collision limits are excluded.</dd></div>
+            <div><dt>Compute time</dt><dd>IK solve time and complete control-cycle processing time, measured inside the control process.</dd></div>
+          </dl>
+
+          <h3 id="experiment-results">3.2 What changed with collision avoidance?</h3>
+          <p>With mesh-fitted spheres, constraints inside IK allowed the hands to reach into the bins without any guard holds. The guard alone kept measured clearance close to zero at the mapped surfaces, but sometimes left an arm stopped even when the operator requested a retreat. With box-cover spheres, both pipelines stopped farther from the shelf and neither allowed the hands to reach into a bin.</p>
+
+          <div class="experiment-table-block">
+            <div class="report-table-wrap" role="region" aria-label="Clearance and obstacle stops across five physical-robot runs" tabindex="0">
+              <table class="report-table collision-results-table">
+                <caption><strong>Table 1.</strong> Clearance and obstacle stops. Paired values are <strong>left / right arm</strong>. Run lengths and operator motions differ, so the time totals describe each run rather than a matched comparison.</caption>
+                <thead><tr><th scope="col">Condition</th><th scope="col">Motion window<br />(s)</th><th scope="col">Minimum clearance<br />(cm)</th><th scope="col">Time overlapping<br />the cloud (s)</th><th scope="col">Time stopped at<br />an obstacle (s)</th><th scope="col">Median clearance<br />while stopped (cm)</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">No avoidance</th><td>42</td><td>−2.98 / −3.08</td><td>27.65 / 16.95</td><td>0 / 0</td><td>—</td></tr>
+                  <tr class="experiment-focus"><th scope="row">IK + guard<small>Mesh-fitted spheres</small></th><td>40*</td><td>−0.17 / −1.93</td><td>0.22 / 0.60</td><td>4.3 / 2.1</td><td>0.9 / 0.9</td></tr>
+                  <tr><th scope="row">Guard only<small>Mesh-fitted spheres</small></th><td>70</td><td>0.02 / −0.04</td><td>0 / 0.14</td><td>22.9 / 14.5</td><td>0.0 / 0.1</td></tr>
+                  <tr><th scope="row">IK + guard<small>Box-cover spheres</small></th><td>101</td><td>4.57 / 6.40</td><td>0 / 0</td><td>46.0 / 37.5</td><td>9.2 / 9.7</td></tr>
+                  <tr><th scope="row">Guard only<small>Box-cover spheres</small></th><td>62</td><td>7.79 / 9.33</td><td>0 / 0</td><td>9.7 / 16.0</td><td>9.9 / 10.0</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="experiment-note">* Motion analysis for IK with mesh-fitted spheres uses the first 40 s. The remainder of that recording was affected by the existing arm-to-arm self-collision check. Zero obstacle-stop time in the baseline means no active obstacle handling stopped an arm, not that the run was collision-free.</p>
+          </div>
+
+          <h4>Without avoidance, the arms pushed the bins</h4>
+          <p>The baseline arms moved through the mapped bin fronts. The padded model overlapped the cloud for <strong>27.65 s on the left and 16.95 s on the right</strong>. By the end of the run, 88% of the visible bin-front surface had shifted back by more than 2 cm, with a median shift of 7.4 cm.</p>
+
+          <aside class="experiment-video-guide" aria-label="How to read the experiment videos">
+            <h4>Reading the clips</h4>
+            <p>The left panel is the head camera’s infrared view. The right panel overlays the selected obstacles in red, the arm collision model, and the operator’s targets. Purple regions mark bin fronts that have moved back since mapping; the inset shows the colour-camera view. The lower graph and timeline show clearance and controller state.</p>
+            <p>In the box-cover clips, the graph shows clearance for the larger spheres used by the controller. Table 1 instead uses the mesh-fitted model for every condition. These are different measurements.</p>
+          </aside>
+
+          <figure class="experiment-video" id="experiment-no-avoidance">
+            <div class="experiment-video-title"><h4>No collision avoidance</h4><span>Run 1 · 0–20 s</span></div>
+            <video controls playsinline muted preload="none" poster="./videos/teleoperation/run1-none-t0-20s.jpg" width="1696" height="708" aria-label="Run 1: no active collision avoidance; the arms push the bins.">
+              <source src="./videos/teleoperation/run1-none-t0-20s.mp4" type="video/mp4" />
+              <a href="./videos/teleoperation/run1-none-t0-20s.mp4">Open the no-avoidance clip.</a>
+            </video>
+            <figcaption><strong>Figure 3.</strong> Baseline behaviour with collision checks logged but not enforced. The arms can continue into the mapped surfaces. <a href="./videos/teleoperation/run1-none-t0-20s.mp4" target="_blank" rel="noopener">Open clip ↗</a></figcaption>
+          </figure>
+
+          <h4>Mesh-fitted spheres: IK constraints allowed reaching; the guard alone could freeze</h4>
+          <p>With constraints inside IK, neither arm triggered the final guard. The six obstacle stops occurred while the operator pushed toward an obstacle; the longest lasted 2.7 s. Both arms had a median stopped clearance of <strong>0.9 cm</strong> and resumed moving within about half a second of pull-back. The hands passed through the opening and reached into the bins.</p>
+          <p>The commanded model maintained at least 0.60 cm clearance, but the model placed at the measured joint angles briefly overlapped the cloud: up to 0.17 cm on the left and 1.93 cm on the right. The constraints act on commanded motion, and the physical arms could lag behind those commands. Avoiding overlap at the commanded pose therefore did not ensure the same clearance at the measured pose.</p>
+          <figure class="experiment-video" id="experiment-ik-mesh">
+            <div class="experiment-video-title"><h4>Constraints inside IK + final guard</h4><span>Mesh-fitted spheres · Run 2 · 3–33 s</span></div>
+            <video controls playsinline muted preload="none" poster="./videos/teleoperation/run2-ik-mesh-t3-33s.jpg" width="1696" height="708" aria-label="Run 2: IK obstacle constraints with mesh-fitted spheres; the hands reach into the bins without final-guard holds.">
+              <source src="./videos/teleoperation/run2-ik-mesh-t3-33s.mp4" type="video/mp4" />
+              <a href="./videos/teleoperation/run2-ik-mesh-t3-33s.mp4">Open the IK mesh-sphere clip.</a>
+            </video>
+            <figcaption><strong>Figure 4.</strong> Obstacle constraints influence the motion before the guard checks it. No guard holds occurred in this run; self-collision stops shown in the overlay are separate from external-obstacle stops. <a href="./videos/teleoperation/run2-ik-mesh-t3-33s.mp4" target="_blank" rel="noopener">Open clip ↗</a></figcaption>
+          </figure>
+
+          <p>With the guard alone, the minimum measured clearances were 0.02 cm and −0.04 cm. However, the longest guard holds lasted <strong>18.1 s on the left and 31.6 s on the right</strong>. In one episode, the left arm remained stopped for 10.4 s while the operator requested motion away from the obstacle. The proposed IK steps still intersected the cloud, so the guard rejected them repeatedly.</p>
+          <figure class="experiment-video" id="experiment-guard-mesh">
+            <div class="experiment-video-title"><h4>Post-IK guard only</h4><span>Mesh-fitted spheres · Run 4 · 17–49 s</span></div>
+            <video controls playsinline muted preload="none" poster="./videos/teleoperation/run4-guard-mesh-t17-49s.jpg" width="1696" height="708" aria-label="Run 4: the mesh-sphere post-IK guard repeatedly rejects proposed movements, including during a requested retreat.">
+              <source src="./videos/teleoperation/run4-guard-mesh-t17-49s.mp4" type="video/mp4" />
+              <a href="./videos/teleoperation/run4-guard-mesh-t17-49s.mp4">Open the guard-only mesh-sphere clip.</a>
+            </video>
+            <figcaption><strong>Figure 5.</strong> The guard blocks proposed motion but does not change how IK generates it. Repeatedly rejected steps can leave the arm frozen, including when the target moves back. <a href="./videos/teleoperation/run4-guard-mesh-t17-49s.mp4" target="_blank" rel="noopener">Open clip ↗</a></figcaption>
+          </figure>
+
+          <h4>Box-cover spheres: more separation, but the opening became inaccessible</h4>
+          <p>With the coarser representation, both pipelines stopped at a median mesh-model clearance of roughly <strong>9–10 cm</strong>. Neither run reached into a bin. The largest box-cover sphere needs about 24 cm to pass the guard and about 26 cm to retain the IK margin on both sides. That leaves little room in the 25–27 cm opening, even though the physical end effector is smaller.</p>
+          <p>In the IK run, slow approaches maintained the intended margin, but faster command changes sometimes reduced it almost to zero. In one episode, commanded box-sphere clearance fell from 0.98 cm to 0.05 cm in 0.23 s. The final guard then held the left arm for as long as 24.3 s and the right for 34.7 s; the longest left-arm stop during a requested retreat was 15.7 s. A possible explanation is that constraining each large sphere against only its nearest cloud point misses other nearby points as the sphere moves. This remains a hypothesis, not an isolated test of the cause.</p>
+          <figure class="experiment-video" id="experiment-ik-boxes">
+            <div class="experiment-video-title"><h4>Constraints inside IK + final guard</h4><span>Box-cover spheres · Run 3 · 17–34 s</span></div>
+            <video controls playsinline muted preload="none" poster="./videos/teleoperation/run3-ik-boxes-t17-34s.jpg" width="1696" height="708" aria-label="Run 3: large box-cover spheres stop the arms short of the opening; the final guard also holds commands.">
+              <source src="./videos/teleoperation/run3-ik-boxes-t17-34s.mp4" type="video/mp4" />
+              <a href="./videos/teleoperation/run3-ik-boxes-t17-34s.mp4">Open the IK box-sphere clip.</a>
+            </video>
+            <figcaption><strong>Figure 6.</strong> The larger collision spheres occupy space beyond the mesh-fitted outline shown in white. This clip shows the approach to the opening and the onset of guard holds; the hold durations above are measured over the full run. <a href="./videos/teleoperation/run3-ik-boxes-t17-34s.mp4" target="_blank" rel="noopener">Open clip ↗</a></figcaption>
+          </figure>
+
+          <p>The guard-only box-sphere run produced ten holds in total. Each ended within 0.5 s after the operator’s target moved at least 5 cm back toward the robot from the end effector. This released more readily than the long freezes above, but the large sphere representation still prevented access through the opening.</p>
+          <figure class="experiment-video" id="experiment-guard-boxes">
+            <div class="experiment-video-title"><h4>Post-IK guard only</h4><span>Box-cover spheres · Run 5 · 8–25 s</span></div>
+            <video controls playsinline muted preload="none" poster="./videos/teleoperation/run5-guard-boxes-t8-25s.jpg" width="1696" height="708" aria-label="Run 5: the box-sphere guard stops the arms farther from the shelf and releases when the operator pulls back.">
+              <source src="./videos/teleoperation/run5-guard-boxes-t8-25s.mp4" type="video/mp4" />
+              <a href="./videos/teleoperation/run5-guard-boxes-t8-25s.mp4">Open the guard-only box-sphere clip.</a>
+            </video>
+            <figcaption><strong>Figure 7.</strong> The guard stops the larger spheres before the hands reach the shelf. The selected clip shows stop-and-release behaviour; neither hand passed through the opening over the full run. <a href="./videos/teleoperation/run5-guard-boxes-t8-25s.mp4" target="_blank" rel="noopener">Open clip ↗</a></figcaption>
+          </figure>
+
+          <h3 id="experiment-timing">3.3 Does it fit in the real-time loop?</h3>
+          <p>All five runs averaged approximately <strong>110 Hz</strong>. With mesh-fitted spheres, adding obstacle constraints increased median IK solve time from 3.14 ms in the baseline to 5.62 ms. The complete control-cycle processing time was 6.85 ms at the median and 8.35 ms at the 99th percentile, below the 9.09 ms control period. The logs reported no IK solver failures or fallbacks in any run.</p>
+          <div class="report-table-wrap" role="region" aria-label="Control-process timing across five runs" tabindex="0">
+            <table class="report-table collision-timing-table">
+              <caption><strong>Table 2.</strong> Processing times in milliseconds, shown as <strong>median / 99th percentile</strong>. Timing uses the complete logged runs. The 99th percentile is the value below which 99% of samples fall; it is not a worst-case timing bound.</caption>
+              <thead><tr><th scope="col">Condition</th><th scope="col">IK solve</th><th scope="col">Complete cycle</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">No avoidance</th><td>3.14 / 4.74</td><td>5.21 / 7.93</td></tr>
+                <tr class="experiment-focus"><th scope="row">IK + guard · mesh-fitted</th><td>5.62 / 7.10</td><td>6.85 / 8.35</td></tr>
+                <tr><th scope="row">Guard only · mesh-fitted</th><td>2.59 / 4.41</td><td>5.98 / 7.42</td></tr>
+                <tr><th scope="row">IK + guard · box-cover</th><td>3.71 / 5.24</td><td>5.24 / 6.65</td></tr>
+                <tr><th scope="row">Guard only · box-cover</th><td>3.51 / 5.07</td><td>4.90 / 6.53</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>These measurements show that the tested implementation fits within the loop’s processing budget for most updates. They do not establish a hard real-time guarantee.</p>
+
+          <h3 id="experiment-interpretation">3.4 What these runs establish</h3>
+          <p>In this setup, integrating obstacle constraints into IK with a mesh-fitted representation combined short obstacle stops, access through the opening, and no final-guard holds. The guard alone could reject the same blocked motion repeatedly. The box-cover runs also show that a coarse robot model can restrict useful motion well before the physical arm reaches an obstacle.</p>
+          <p>The comparison has several limits that matter when interpreting these observations:</p>
+          <ul class="experiment-limitations">
+            <li><strong>One operator, one scene, one run per condition.</strong> The motions were not repeated identically. The box-cover runs followed a fixed routine, while the other runs were freely driven. These are behavioural observations, not a statistical ranking of the methods.</li>
+            <li><strong>The scene and map differed across runs.</strong> The bins were rearranged after the baseline. During the IK mesh-sphere run, contact with bin contents outside the obstacle mask pushed two bins back by about 3 cm. The unchanged cloud was then out of date for the rest of that run and the guard-only mesh-sphere run. A fresh capture was used for the box-cover runs.</li>
+            <li><strong>Only selected surfaces were represented.</strong> The static cloud could not follow moving bins, and the mask excluded their contents. Clearance to the map therefore cannot establish collision-free motion against everything in the workspace.</li>
+            <li><strong>Clearance depends on the model and calibration.</strong> It is calculated from joint encoders, padded spheres, and a camera pose with roughly 1–2 cm uncertainty. Physical tracking error also separates commanded clearance from measured-pose clearance.</li>
+            <li><strong>Self-collision limits can also stop motion.</strong> Those stops are excluded from the obstacle-stop totals. The IK mesh-sphere motion analysis is limited to its first 40 s because the existing arm-to-arm check affected the remaining recording.</li>
+          </ul>
         </section>
 
         <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">

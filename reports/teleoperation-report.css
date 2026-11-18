@@ -75,6 +75,149 @@
   overflow-wrap: anywhere;
 }
 
+.collision-experiments,
+.collision-experiments h3,
+.collision-experiments figure {
+  scroll-margin-top: 7rem;
+}
+
+.collision-experiments h4 {
+  margin: 2rem 0 0.8rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.experiment-measures {
+  margin: 2rem 0;
+  padding: 0.15rem 0 0.15rem 1.3rem;
+  border-left: 2px solid #a6b7c3;
+  font-size: 0.95rem;
+}
+
+.experiment-measures > div + div {
+  margin-top: 1.2rem;
+}
+
+.experiment-measures dt {
+  font-weight: 600;
+}
+
+.experiment-measures dd {
+  margin: 0.25rem 0 0;
+}
+
+.experiment-table-block,
+.experiment-video {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(68rem, calc(100vw - 2 * var(--gutter)));
+  max-width: none;
+  margin: 2.5rem 0;
+}
+
+.experiment-table-block .report-table-wrap {
+  margin-bottom: 0.8rem;
+}
+
+.collision-results-table {
+  min-width: 58rem;
+  font-size: 0.85rem;
+}
+
+.collision-results-table td,
+.collision-timing-table td {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.collision-results-table th:first-child {
+  min-width: 10rem;
+}
+
+.collision-timing-table {
+  min-width: 34rem;
+}
+
+.experiment-focus {
+  background: rgba(220, 227, 255, 0.28);
+}
+
+.experiment-note,
+.experiment-video figcaption {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.experiment-video-guide {
+  margin: 2rem 0;
+  padding: 1.2rem 1.4rem;
+  border-left: 2px solid #a6b7c3;
+  background: rgba(233, 229, 219, 0.45);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.experiment-video-guide h4 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.experiment-video {
+  padding: clamp(0.65rem, 1.8vw, 1.3rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fcfcf9;
+}
+
+.experiment-video-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.experiment-video-title h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.experiment-video-title span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+}
+
+.experiment-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1696 / 708;
+  background: #171816;
+  border-radius: 5px;
+}
+
+.experiment-video figcaption {
+  margin-top: 1rem;
+}
+
+.experiment-video figcaption strong {
+  color: var(--ink);
+}
+
+.experiment-limitations li + li {
+  margin-top: 0.8rem;
+}
+
+@media (max-width: 620px) {
+  .experiment-video-title {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 480px) {
   .collision-equation {
     font-size: 0.9rem;
@@ -83,6 +226,14 @@
 
 @media print {
   .report-flow-figure {
+    width: 100%;
+    left: 0;
+    transform: none;
+    break-inside: avoid;
+  }
+
+  .experiment-video,
+  .experiment-table-block {
     width: 100%;
     left: 0;
     transform: none;

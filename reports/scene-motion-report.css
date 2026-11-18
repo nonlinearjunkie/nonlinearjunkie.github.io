@@ -1,0 +1,85 @@
+.scene-motion-report h3,
+.scene-motion-report h4,
+.scene-motion-report section {
+  scroll-margin-top: 7rem;
+}
+
+.scene-motion-report h4 {
+  margin: 1.8rem 0 0.7rem;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.scene-motion-report li + li {
+  margin-top: 0.6rem;
+}
+
+.scene-figure {
+  width: min(68rem, calc(100vw - 2 * var(--gutter)));
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: none;
+  margin: 2.5rem 0;
+  padding: clamp(0.65rem, 1.6vw, 1.3rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fcfcf9;
+}
+
+.scene-figure img,
+.scene-figure picture {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.scene-figure figcaption {
+  max-width: 50rem;
+  margin: 1rem auto 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.scene-figure figcaption strong {
+  color: var(--ink);
+}
+
+.scene-dataset-table {
+  min-width: 36rem;
+}
+
+.scene-equation {
+  margin: 1.6rem 0;
+  padding: 1rem 0.5rem;
+  overflow-x: auto;
+  border-block: 1px solid var(--line);
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+}
+
+.scene-equation math {
+  margin: 0 auto;
+  width: max-content;
+}
+
+.scene-training-details p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .scene-figure picture {
+    max-width: 30rem;
+    margin: 0 auto;
+  }
+}
+
+@media print {
+  .scene-figure {
+    left: 0;
+    transform: none;
+    width: 100%;
+    break-inside: avoid;
+  }
+}

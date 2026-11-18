@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Scene-aware kinematic motion generation for the Unitree G1: conditioning Kimodo on LiDAR geometry to generate a route and whole-body motion." />
+    <meta name="author" content="Suraj Joshi" />
+    <title>Scene-Aware Humanoid Motion Generation — Suraj Joshi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&amp;family=Manrope:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./report.css" />
+    <link rel="stylesheet" href="./scene-motion-report.css" />
+  </head>
+  <body class="report-page">
+    <a class="skip-link" href="#report">Skip to report</a>
+    <header class="report-header">
+      <a class="report-home" href="../index.html#projects">← Back to projects</a>
+      <nav aria-label="Report sections">
+        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#references">References</a>
+      </nav>
+    </header>
+    <main class="report-shell scene-motion-report" id="report">
+      <article>
+        <header class="report-title">
+          <p class="report-kicker">Technical report</p>
+          <h1>Scene-Aware Humanoid Motion Generation</h1>
+          <p class="report-author">Suraj Joshi</p>
+        </header>
+
+        <section class="report-section report-abstract" id="abstract" aria-labelledby="abstract-heading">
+          <h2 id="abstract-heading">Abstract</h2>
+          <p>A humanoid motion must fit the surrounding environment as well as describe a plausible movement. We present <strong>Scene-Kimodo</strong>, an extension of Kimodo that conditions whole-body motion generation for the Unitree G1 on LiDAR-derived geometry. A perception pipeline converts the scene into finite surfaces, boundaries, body-clearance probes, and a robot-centric elevation map. Encoders turn these representations into scene tokens that condition both the root and body denoisers alongside a text prompt. The model generates the route and corresponding body motion without a supplied path or waypoints. Terrain-relative coordinates separate large changes in ground elevation from the pose the model predicts, and overlapping motion windows allow longer courses to be assembled. This report describes the dataset, perception pipeline, model, and training procedure. The output is a <strong>kinematic motion sequence</strong>; tracking and physical execution are outside the present scope.</p>
+        </section>
+
+        <section class="report-section" id="introduction" aria-labelledby="introduction-heading">
+          <h2 id="introduction-heading"><span>1.</span> Introduction</h2>
+          <p>Moving through an environment requires more than generating a plausible walking motion. A humanoid may need to move around a box, lift its feet onto a staircase, or change its body configuration to fit the available space. The route and the body motion must therefore agree with the surrounding geometry.</p>
+          <p>Kimodo generates human and humanoid motion from text and kinematic constraints, including poses, paths, and waypoints <a class="citation" href="#ref-1" role="doc-biblioref">[1]</a>. This provides a useful motion prior, but the pretrained model does not take scene perception as an input. A supplied path can guide the motion; choosing that path from observed geometry remains a separate problem.</p>
+          <p>We extend this model so that scene geometry can influence both where the robot moves and how its body moves along the route. The extension uses a compact representation derived from simulated LiDAR scans and is fine-tuned on scene-aligned obstacle and stair motions. The current implementation generates motion against a <strong>prebuilt, static map</strong>. It does not perform live onboard mapping or close a control loop around a physical robot.</p>
+        </section>
+
+        <section class="report-section methodology" id="methodology" aria-labelledby="methodology-heading">
+          <h2 id="methodology-heading"><span>2.</span> Methodology</h2>
+
+          <h3 id="system-overview">2.1 System overview</h3>
+          <p>Scene-Kimodo takes a text prompt, an initial heading, and geometry queried from a LiDAR map. The geometry is expressed relative to the robot at the start of a motion window and encoded into scene tokens. Kimodo’s root denoiser uses these tokens to predict global position and heading; its body denoiser uses the same scene information and the predicted root motion to generate the rest of the pose sequence.</p>
+          <p>The model is trained on local windows of 2–10 seconds at 30 Hz. Longer motions are assembled from overlapping generated windows, with each new scene query anchored at the pose reached by the generated motion. After restoring terrain height and scene coordinates, the output is converted into a G1 root pose and joint-angle trajectory.</p>
+
+          <h3 id="dataset">2.2 Scene-aligned dataset</h3>
+          <p>Each training example pairs a motion with the geometry it traverses. All examples use the same prompt, <em>“A humanoid robot walks forward through the scene.”</em> The prompt therefore does not specify which side of an obstacle to take or describe the stair layout; those differences must come from geometry.</p>
+
+          <h4>Obstacle courses</h4>
+          <p>The Hard118 set contains 118 eight-second motions paired with 107 scenes containing zero, one, or two box obstacles. The courses include straight corridors, obstacles that permit either side, and layouts that require a particular route.</p>
+          <p>To create a target motion, we construct a smooth pelvis path that enters the required lane, passes the obstacle, and returns toward the centre line. The path maintains at least 0.5 m clearance from the obstacle footprint and is supplied to the pretrained G1 Kimodo model as a root-path constraint. The resulting motion is smoothed and checked in Isaac Lab <a class="citation" href="#ref-2" role="doc-biblioref">[2]</a> at the original frames and interpolated midpoints, excluding ordinary foot–ground contact. All 118 targets pass this check. <strong>The constructed path is used to create training targets; it is not an input to the final generator.</strong></p>
+
+          <h4>Stair courses</h4>
+          <p>Stair targets come from physics rollouts of locomotion policies in procedurally generated Isaac Lab courses. The courses include ascent, descent, up–down, down–up, and flat walking, with variations in stair geometry, approach distance, landing length, speed, and starting pose. Most rollouts use the Instinct perceptive stair policy <a class="citation" href="#ref-3" role="doc-biblioref">[3]</a>; a smaller subset uses the ETH foothold-prediction policy <a class="citation" href="#ref-4" role="doc-biblioref">[4]</a>.</p>
+          <p>We retain complete rollouts that remain upright, finish the course, avoid non-foot collisions, and satisfy checks on foot height, stair width, and sole support. Executed pelvis poses and joint positions become the targets, rather than the policies’ actions. These motions are converted from 50 Hz to Kimodo’s 30 Hz representation, and foot contacts are recomputed against the stair surfaces.</p>
+
+          <div class="report-table-wrap" role="region" aria-label="Scene-aligned dataset composition" tabindex="0">
+            <table class="report-table scene-dataset-table">
+              <caption><strong>Table 1.</strong> Dataset composition. Mirroring augments motion without adding new scene geometry.</caption>
+              <thead><tr><th scope="col">Source</th><th scope="col">Distinct training motions</th><th scope="col">Training sequences after augmentation</th><th scope="col">Held-out motions</th></tr></thead>
+              <tbody><tr><th scope="row">Obstacle courses</th><td>103</td><td>103</td><td>15</td></tr><tr><th scope="row">Stair courses</th><td>204</td><td>408</td><td>16</td></tr><tr><th scope="row">Total</th><td>307</td><td>511</td><td>31</td></tr></tbody>
+            </table>
+          </div>
+          <p>Only training stair motions are mirrored left-to-right. After preprocessing and before mirroring, the training cache contains approximately <strong>82 minutes</strong> of motion: about 14 minutes of obstacle walking and 68 minutes of stair traversal. Motions sharing a scene stay in the same split. Each sampled window is paired with geometry queried at its starting pose.</p>
+
+          <h3 id="perception">2.3 From LiDAR scans to scene tokens</h3>
+          <p>The perception pipeline produces two complementary views of the scene: a packet of finite geometric elements and a regular elevation grid. Both use the same robot-centred frame, so a surface’s position has the same meaning in the scene inputs and the motion window.</p>
+
+          <figure class="scene-figure" id="scene-encoding-figure">
+            <picture><source media="(max-width: 760px)" srcset="./figures/scene-motion-geometry-mobile.svg" /><img src="./figures/scene-motion-geometry.svg" width="1120" height="500" loading="lazy" alt="A prebuilt LiDAR map is queried at the current window-start pose. Faces, boundaries, and body-clearance probes form 64 geometry tokens. An elevation grid forms 88 spatial tokens and four summary tokens. The combined 156 scene tokens condition both motion denoisers." /></picture>
+            <figcaption><strong>Figure 1.</strong> Two representations of the same mapped scene. Finite elements preserve surfaces and clearance information; the elevation grid supplies spatial context over the route.</figcaption>
+          </figure>
+
+          <h4>Build the scene maps</h4>
+          <p>Obstacle scenes use RTX LiDAR scans. For axis-aligned stair scenes, an analytical ray caster reproduces the OS0 beam pattern at the exported scanner poses. First returns from the scanner poses are fused into a 5 cm voxel map. The mapping pipeline then constructs a finite plane map with outer boundaries and a sparse Euclidean signed-distance field (ESDF), which supplies distances and gradients relative to occupied space.</p>
+          <p>At each window start, these maps are queried in the current robot root frame. Training query poses are spaced 15 frames apart, or 0.5 seconds at 30 Hz. During generation, later queries instead use the pose reached by the preceding generated window.</p>
+
+          <h4>Encode finite geometry</h4>
+          <p>The geometry packet contains three types of element:</p>
+          <ul>
+            <li><strong>Faces:</strong> surface position, orientation, extent, slope, fit quality, confidence, category, and observation age.</li>
+            <li><strong>Boundaries:</strong> outer-edge endpoints and lengths, with a reference to the parent face.</li>
+            <li><strong>Body probes:</strong> 63 samples attached to the G1 collision shell, carrying signed distance, clearance margin, ESDF gradient, and validity information.</li>
+          </ul>
+          <p>The feature widths are 25, 8, and 19, respectively. Channels are standardized using training-split statistics and clipped to eight standard deviations. Separate projections and categorical embeddings identify the element types and body parts; validity masks distinguish padding from geometry. A cross-attention encoder compresses the variable-size packet into <strong>64 tokens</strong>.</p>
+
+          <h4>Encode elevation over the route</h4>
+          <p>Upward-facing support planes are rasterized into a 2.5 cm elevation field. A connectivity rule marks cells reachable from the start through neighbouring height changes of at most 0.30 m. Averaging this reachable height over a 0.625 m square produces a smooth terrain ramp.</p>
+          <p>For each window, the field is resampled into an <strong>88 × 64 grid with 0.10 m cells</strong>, covering 8.8 m forward–backward and 6.4 m laterally, starting 0.8 m behind the robot. Its four channels represent the ramp relative to the starting height, local height relative to the ramp, LiDAR observation coverage, and surfaces more than 0.25 m above reachable terrain.</p>
+          <p>The final encoder adds normalized forward and lateral coordinates as two input channels. A convolutional network produces 88 spatial tokens, one per 8 × 8-cell patch, and four summary tokens from pooled map features. Together with the finite-geometry packet, this gives <strong>156 scene tokens</strong>.</p>
+
+          <h4>Represent motion relative to the terrain</h4>
+          <p>A staircase can change the robot’s absolute height by metres, even when its pose relative to the ground changes much less. We subtract the smooth ramp height under the pelvis from the root and joint heights and adjust vertical velocities consistently. The model then predicts motion relative to this local terrain level. Individual stair treads remain visible in the elevation input.</p>
+          <p>After generation, the ramp is sampled under the <em>predicted</em> pelvis path and added back. Large-scale rise and descent are therefore partly supplied by the geometry transform; the network predicts the pose and clearance relative to that ramp.</p>
+          <div class="scene-equation" aria-label="World height equals terrain-relative height plus ramp height under the predicted pelvis">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>z</mi><mtext>world</mtext></msub><mo>=</mo><msub><mi>z</mi><mtext>relative</mtext></msub><mo>+</mo><msub><mi>h</mi><mtext>ramp</mtext></msub><mo>(</mo><msub><mi>p</mi><mtext>pelvis</mtext></msub><mo>)</mo></math>
+          </div>
+
+          <h3 id="motion-model">2.4 Perception-conditioned motion generation</h3>
+          <p>We retain Kimodo’s pose representation and two-stage diffusion architecture <a class="citation" href="#ref-1" role="doc-biblioref">[1]</a>. Each frame contains 417 features: five describe the smoothed global root position and heading, and 412 describe joint positions, rotations, velocities, and four foot-contact values. A window is expressed with its initial smoothed root at the origin, initial heading at zero, and heights relative to the terrain ramp.</p>
+          <p>Training adds Gaussian noise using a 1,000-step cosine schedule. The denoiser receives the noisy motion, timestep, text embedding, initial heading, and scene tokens, and predicts the clean motion, <em>x</em><sub>0</sub>. Generation starts from Gaussian noise and repeatedly refines it with DDIM <a class="citation" href="#ref-5" role="doc-biblioref">[5]</a>; the current course-generation configuration uses 100 denoising steps.</p>
+
+          <figure class="scene-figure" id="scene-denoiser-figure">
+            <picture><source media="(max-width: 760px)" srcset="./figures/scene-motion-denoiser-mobile.svg" /><img src="./figures/scene-motion-denoiser.svg" width="1120" height="520" loading="lazy" alt="At each diffusion step, the root denoiser receives noisy motion and shared text, time, heading, and scene conditioning. Its root prediction is converted into local root features for the body denoiser, which also receives noisy body features and the shared conditioning. Root and body outputs form a clean-motion prediction used by the next DDIM update." /></picture>
+            <figcaption><strong>Figure 2.</strong> One denoising step. Scene information reaches both stages, and the root prediction is retained and combined with the body output. During training, the predicted root is detached before entering the body stage, so body-stage gradients do not pass through that connection.</figcaption>
+          </figure>
+
+          <p>The root stage sees the complete noisy motion and predicts position and heading. That prediction is converted into local planar velocity, heading velocity, and root height. The body stage combines these local root features with the noisy body features to predict the remaining pose features. Concatenating both outputs gives the clean-motion estimate for that diffusion step.</p>
+          <p>The same scene tokens condition both stages, alongside text, diffusion time, and initial heading. Geometry tokens do not shift the pretrained model’s original text and motion positional indices; their spatial information comes from their features and the elevation grid’s patch positions. Each denoiser has 16 Transformer layers with width 1,024 and eight attention heads. The scene encoders add approximately 7.3 million parameters to the approximately 284-million-parameter Kimodo denoiser.</p>
+
+          <h3 id="training">2.5 Training and joint fine-tuning</h3>
+          <p>The final training phase updates both denoisers and both scene encoders together. It begins from staged initialization: the root network and scene encoders come from an obstacle-focused phase, while the body network comes from an earlier scene-conditioned run. The joint phase runs for 8,000 updates. As in the two-stage implementation, the body receives a detached local-root prediction during training; joint fine-tuning does not imply that body gradients flow through the root prediction.</p>
+
+          <h4>Training objective</h4>
+          <p>The reconstruction objective uses Kimodo’s pose-feature groups. This implementation applies Smooth L1 losses in physical units to root position, heading, joint positions, rotations, velocities, and contact labels, with weights 10, 2, 10, 10, 3, and 4. A forward-kinematics consistency term, weighted by 5, compares joint positions decoded from rotations with target positions.</p>
+          <p>Three additional terms provide scene and transition supervision:</p>
+          <ul>
+            <li><strong>Terrain penetration:</strong> restore predicted joints to absolute height and penalize entry into the ground, stairs, or obstacles, using the simulation terrain geometry for supervision.</li>
+            <li><strong>Transition consistency:</strong> for windows with a preceding motion, apply extra reconstruction loss to the ten frames following the five-frame overlap.</li>
+            <li><strong>Scene-to-route supervision:</strong> a training-only head predicts three candidate pelvis paths from scene tokens. A winner-takes-all path and score loss encourages the encoder to retain route information. This head is not used to generate motion.</li>
+          </ul>
+          <div class="scene-equation" aria-label="Total loss equals motion loss plus ten times penetration loss plus two times transition loss plus point three times route loss">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>ℒ</mi><mo>=</mo><msub><mi>ℒ</mi><mtext>motion</mtext></msub><mo>+</mo><mn>10</mn><msub><mi>ℒ</mi><mtext>penetration</mtext></msub><mo>+</mo><mn>2</mn><msub><mi>ℒ</mi><mtext>transition</mtext></msub><mo>+</mo><mn>0.3</mn><msub><mi>ℒ</mi><mtext>route</mtext></msub></math>
+          </div>
+          <p>The objective penalizes penetration and reconstructs foot-contact labels, but it does not include an explicit two-sided foot-to-tread contact loss. In particular, a planted foot remaining above a tread is not directly penalized by a contact-height term.</p>
+
+          <h4>Window and noise sampling</h4>
+          <p>Training windows are sampled in a 40:60 mixture of obstacle and stair examples. Windows last 60–300 frames; half use the longest available duration, while the rest use a random valid length. Forty percent start at the beginning of a course. Of the mid-course windows, 30% remain unconstrained; the others receive a five-frame transition from the preceding target motion.</p>
+          <p>To train route selection when little motion information remains, 35% of timesteps are sampled from the high-noise range 900–999, and an independent 20% overwrite sets the timestep to 999. Text conditioning is dropped for 10% of examples. <strong>No target path or waypoint is supplied as a conditioning constraint during this final joint phase.</strong> Recorded paths still provide targets for reconstruction and the auxiliary route loss.</p>
+
+          <details class="method-details scene-training-details">
+            <summary>Optimization settings</summary>
+            <p>Batch size: 32. Optimizer: Adam-atan2. Learning rates: 2 × 10<sup>−5</sup> for Kimodo and 5 × 10<sup>−5</sup> for scene modules, with a 300-update warmup and cosine decay to 20% of peak. Parameters and losses use FP32; Transformer forward passes use BF16 autocasting. The two parameter groups are clipped independently to gradient norm 1.0. An exponential moving average is maintained with decay 0.995.</p>
+          </details>
+
+          <h3 id="course-generation">2.6 Generating a complete course</h3>
+          <p>The first window uses the starting pose to query scene geometry and establish its coordinate frame. The course duration determines the requested number of frames. No future reference poses, path, or waypoints are supplied. The root and body denoisers generate at most 300 frames from noise.</p>
+
+          <figure class="scene-figure" id="scene-chaining-figure">
+            <picture><source media="(max-width: 760px)" srcset="./figures/scene-motion-chaining-mobile.svg" /><img src="./figures/scene-motion-chaining.svg" width="1120" height="460" loading="lazy" alt="Generate the first chunk, retain its last five frames, query the static map at the generated overlap-start pose, and generate the next chunk with those frames constrained. Blend the overlap and append the new suffix, repeating until the requested duration is reached. Finally restore terrain height and export the G1 trajectory." /></picture>
+            <figcaption><strong>Figure 3.</strong> Chaining motion windows. Scene queries follow the generated pose, but the underlying map stays fixed. Only the first query uses the recorded starting pose; later transitions come from generated motion.</figcaption>
+          </figure>
+
+          <p>For a longer course, the next window overlaps the preceding output by five frames. These frames become native full-body and end-effector constraints at the start of the new window. The pose at the start of the overlap defines a new local frame and scene query. The model samples a new window, linearly blends the shared frames, and appends only the new suffix. This repeats until the requested duration is reached.</p>
+          <p>Each chunk is transformed back into the common sequence frame. The LiDAR ramp is then sampled under the assembled pelvis path and restored to root height, joint heights, and vertical velocities. Kimodo’s inverse representation and forward kinematics decode the motion, which is converted into a 36-value G1 trajectory: root position, root quaternion, and 29 actuated joint angles.</p>
+          <p>The result is a scene-conditioned kinematic reference motion. A tracker that executes this reference, and any feedback from physical execution, are separate work.</p>
+        </section>
+
+        <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">
+          <h2 id="references-heading">References</h2>
+          <ol>
+            <li id="ref-1"><p>D. Rempe, M. Petrovich, Y. Yuan, et al. “Kimodo: Scaling Controllable Human Motion Generation.” arXiv:2603.15546, 2026.</p><p class="reference-links"><a href="https://arxiv.org/abs/2603.15546">Paper</a> · <a href="https://github.com/nv-tlabs/kimodo">Official implementation</a></p></li>
+            <li id="ref-2"><p>Isaac Lab contributors. <em>Isaac Lab.</em> Simulation framework and documentation.</p><p class="reference-links"><a href="https://isaac-sim.github.io/IsaacLab/main/index.html">Official documentation</a></p></li>
+            <li id="ref-3"><p>Project Instinct contributors. <em>InstinctLab.</em> Perceptive locomotion environments and policies.</p><p class="reference-links"><a href="https://github.com/project-instinct/instinctlab">Official implementation</a> · <a href="https://project-instinct.github.io/">Project</a></p></li>
+            <li id="ref-4"><p>Robotic Systems Lab and ETH AI Center. “Watch Your Step: Anticipated Perception for Humanoid Locomotion.” 2026.</p><p class="reference-links"><a href="https://leggedrobotics.github.io/watch-your-step/">Project</a> · <a href="https://github.com/leggedrobotics/foothold-prediction-model">Official implementation</a></p></li>
+            <li id="ref-5"><p>J. Song, C. Meng, and S. Ermon. “Denoising Diffusion Implicit Models.” ICLR, 2021.</p><p class="reference-links"><a href="https://arxiv.org/abs/2010.02502">Paper</a></p></li>
+          </ol>
+        </section>
+      </article>
+      <div class="report-end"><a href="../index.html#projects">← Back to selected projects</a><a href="#report">Back to top ↑</a></div>
+    </main>
+  </body>
+</html>

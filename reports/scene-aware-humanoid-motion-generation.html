@@ -19,7 +19,7 @@
     <header class="report-header">
       <a class="report-home" href="../index.html#projects">← Back to projects</a>
       <nav aria-label="Report sections">
-        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#experiments">Experiments</a><a href="#qualitative-results">Videos</a><a href="#references">References</a>
+        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#experiments">Experiments</a><a href="#qualitative-results">Videos</a><a href="#conclusion">Conclusion</a><a href="#references">References</a>
       </nav>
     </header>
     <main class="report-shell scene-motion-report" id="report">
@@ -322,6 +322,12 @@
           </figure>
         </section>
 
+        <section class="report-section" id="conclusion" aria-labelledby="conclusion-heading">
+          <h2 id="conclusion-heading"><span>5.</span> Conclusion</h2>
+          <p>LiDAR-based mapping makes the surrounding geometry available before motion generation begins. This broader scene view lets the model generate the route and body motion together without repeatedly acquiring new depth images. Short motions can be generated in a single window; longer courses reuse the same map across overlapping windows.</p>
+          <p>Egocentric depth offers a more limited view, motivating rolling generation as the robot observes new parts of the scene. Each generated motion then determines the next observation. If the robot drifts into states poorly represented in training, later predictions can become less reliable and errors can accumulate. This is analogous to the distribution shift that DAgger addresses in imitation learning by adding expert supervision at states reached by the learner <a class="citation" href="#ref-8" role="doc-biblioref">[8]</a>.</p>
+        </section>
+
         <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">
           <h2 id="references-heading">References</h2>
           <ol>
@@ -332,6 +338,7 @@
             <li id="ref-5"><p>J. Song, C. Meng, and S. Ermon. “Denoising Diffusion Implicit Models.” ICLR, 2021.</p><p class="reference-links"><a href="https://arxiv.org/abs/2010.02502">Paper</a></p></li>
             <li id="ref-6"><p>B. Zhu, B. Lin, M. Ning, et al. “LanguageBind: Extending Video-Language Pretraining to N-modality by Language-based Semantic Alignment.” ICLR, 2024.</p><p class="reference-links"><a href="https://proceedings.iclr.cc/paper_files/paper/2024/hash/2862ccf01e3843c81623b246895bcc45-Abstract-Conference.html">Paper</a> · <a href="https://huggingface.co/LanguageBind/LanguageBind_Depth">Depth encoder</a></p></li>
             <li id="ref-7"><p>M. Patel, J. Frey, M. Mittal, et al. “DeFM: Learning Foundation Representations from Depth for Robotics.” arXiv:2601.18923, 2026.</p><p class="reference-links"><a href="https://arxiv.org/abs/2601.18923">Paper</a> · <a href="https://github.com/leggedrobotics/defm">Official implementation</a></p></li>
+            <li id="ref-8"><p>S. Ross, G. Gordon, and D. Bagnell. “A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning.” AISTATS, PMLR 15:627–635, 2011.</p><p class="reference-links"><a href="https://proceedings.mlr.press/v15/ross11a.html">Paper</a></p></li>
           </ol>
         </section>
       </article>

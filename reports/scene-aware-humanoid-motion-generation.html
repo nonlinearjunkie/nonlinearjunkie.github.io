@@ -11,14 +11,14 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&amp;family=Manrope:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&amp;display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../styles.css" />
     <link rel="stylesheet" href="./report.css" />
-    <link rel="stylesheet" href="./scene-motion-report.css" />
+    <link rel="stylesheet" href="./scene-motion-report.css?v=quantitative-v2" />
   </head>
   <body class="report-page">
     <a class="skip-link" href="#report">Skip to report</a>
     <header class="report-header">
       <a class="report-home" href="../index.html#projects">← Back to projects</a>
       <nav aria-label="Report sections">
-        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#references">References</a>
+        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#experiments">Experiments</a><a href="#references">References</a>
       </nav>
     </header>
     <main class="report-shell scene-motion-report" id="report">
@@ -31,7 +31,7 @@
 
         <section class="report-section report-abstract" id="abstract" aria-labelledby="abstract-heading">
           <h2 id="abstract-heading">Abstract</h2>
-          <p>A humanoid motion must fit the surrounding environment as well as describe a plausible movement. We present <strong>Scene-Kimodo</strong>, an extension of Kimodo that conditions whole-body motion generation for the Unitree G1 on LiDAR-derived geometry. A perception pipeline converts the scene into finite surfaces, boundaries, body-clearance probes, and a robot-centric elevation map. Encoders turn these representations into scene tokens that condition both the root and body denoisers alongside a text prompt. The model generates the route and corresponding body motion without a supplied path or waypoints. Terrain-relative coordinates separate large changes in ground elevation from the pose the model predicts, and overlapping motion windows allow longer courses to be assembled. This report describes the dataset, perception pipeline, model, and training procedure. The output is a <strong>kinematic motion sequence</strong>; tracking and physical execution are outside the present scope.</p>
+          <p>A humanoid motion must fit the surrounding environment as well as describe a plausible movement. We present <strong>Scene-Kimodo</strong>, an extension of Kimodo that conditions whole-body motion generation for the Unitree G1 on LiDAR-derived geometry. A perception pipeline converts the scene into finite surfaces, boundaries, body-clearance probes, and a robot-centric elevation map. Encoders turn these representations into scene tokens that condition both the root and body denoisers alongside a text prompt. The model generates the route and corresponding body motion without a supplied path or waypoints. Terrain-relative coordinates separate large changes in ground elevation from the pose the model predicts, and overlapping motion windows allow longer courses to be assembled. This report describes the dataset, perception pipeline, model, training procedure, and quantitative evaluation. The output is a <strong>kinematic motion sequence</strong>; tracking and physical execution are outside the present scope.</p>
         </section>
 
         <section class="report-section" id="introduction" aria-labelledby="introduction-heading">
@@ -151,6 +151,44 @@
           <p>The result is a scene-conditioned kinematic reference motion. A tracker that executes this reference, and any feedback from physical execution, are separate work.</p>
         </section>
 
+        <section class="report-section scene-experiments" id="experiments" aria-labelledby="experiments-heading">
+          <h2 id="experiments-heading"><span>3.</span> Experiments</h2>
+          <p>We compare three approaches to scene-aware motion generation: <strong>depth one-shot</strong>, <strong>depth rolling</strong>, and <strong>LiDAR one-shot</strong>. We select one depth configuration per mode and evaluate the LiDAR method described in Section 2. All results measure kinematic motion generation.</p>
+
+          <h3 id="evaluation-protocol">3.1 Evaluation protocol</h3>
+          <p>Obstacle evaluations use 15 held-out Hard118 motions. The LiDAR method is also evaluated on 16 held-out stair courses. Each run uses seed 101 and 100 DDIM steps. References are used for scoring; the generator is not given the future reference motion.</p>
+          <p>Obstacle success requires matching the stored route label and reaching at least 80% of the reference forward progress. The collision check differs between the depth and LiDAR evaluations:</p>
+          <ul>
+            <li><strong>Depth:</strong> the root path must avoid obstacle footprints expanded by a 0.20 m margin.</li>
+            <li><strong>LiDAR:</strong> no decoded joint point may enter an obstacle box at any generated frame.</li>
+          </ul>
+          <p>These checks use different approximations of the robot, so their success rates are not a direct comparison under an identical collision test. Neither checks the complete robot mesh. Route labels specify left, right, or straight; choosing the other feasible side of an obstacle can still fail the route criterion.</p>
+
+          <h3 id="generation-comparison">3.2 Depth and LiDAR comparison</h3>
+          <p><strong>Depth one-shot</strong> uses a frozen LanguageBind depth encoder <a class="citation" href="#ref-6" role="doc-biblioref">[6]</a> and a fixed side-camera image to generate an eight-second motion. <strong>Depth rolling</strong> uses a frozen DeFM ResNet-18 encoder <a class="citation" href="#ref-7" role="doc-biblioref">[7]</a> with lower and upper ego-camera views. It predicts 37 frames, commits seven, then captures new depth and predicts again using seven previous motion states as history.</p>
+          <p><strong>LiDAR one-shot</strong> uses the scene geometry and elevation map to generate the route and whole-body motion without a supplied path. Longer courses are assembled from overlapping windows, as described in Section 2.6.</p>
+          <div class="scene-results-wide">
+            <div class="report-table-wrap" role="region" aria-label="Depth and LiDAR motion-generation results" tabindex="0">
+              <table class="report-table scene-generation-results">
+                <caption><strong>Table 2.</strong> Motion-generation results. Obstacle success uses 15 held-out motions; stair success uses 16 held-out courses. Depth and LiDAR use the collision checks defined above. — means not evaluated for that configuration.</caption>
+                <thead><tr><th scope="col">Approach</th><th scope="col">Scene input</th><th scope="col">Obstacle success</th><th scope="col">Stair success</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Depth one-shot<small>LanguageBind Depth</small></th><td>Fixed side-camera depth</td><td>11/15 · 73.3%</td><td>—</td></tr>
+                  <tr><th scope="row">Depth rolling<small>DeFM ResNet-18</small></th><td>Updated lower + upper ego depth</td><td>6/15 · 40.0%</td><td>—</td></tr>
+                  <tr><th scope="row">LiDAR one-shot</th><td>LiDAR geometry + elevation map</td><td>13/15 · 86.7%</td><td>1/16 · 6.3%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p>Depth one-shot achieved higher obstacle success than the selected rolling configuration. Camera coverage, encoder, history, and prediction horizon differ, so this result does not isolate the effect of rolling generation alone.</p>
+          <p>LiDAR one-shot passed 13 of the 15 obstacle tests, with mean forward progress of <strong>98.2% of the reference</strong>. One failure was a mismatch with the stored route label on a course that allowed either side; the other contained six frames with a joint point inside an obstacle.</p>
+
+          <h3 id="stair-results">3.3 Stair traversal</h3>
+          <p>A stair course passes the full test if both feet finish beyond the course, maximum foot penetration stays below 5 cm, and the scored non-foot body joints stay clear of the terrain. Pelvis clearance must remain greater than 0.5 m and at most 1.0 m, with final pelvis-height error below 15 cm.</p>
+          <p>LiDAR one-shot completed <strong>16/16 courses</strong>, with no scored non-foot body-joint collisions. However, foot penetration exceeded the limit on 15 courses, leaving <strong>1/16 full successes</strong>. The mean of each course’s maximum foot penetration was <strong>12.74 cm</strong>. Mean absolute final pelvis-height error was <strong>1.18 cm</strong>, and mean distance to the nearest point on the reference path was <strong>22.78 cm</strong>.</p>
+          <p>Course completion and final elevation therefore do not capture the remaining foot-placement errors. The terrain ramp also supplies part of the absolute elevation change. These results use small held-out sets and one generation seed; physical tracking is not evaluated here.</p>
+        </section>
+
         <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">
           <h2 id="references-heading">References</h2>
           <ol>
@@ -159,6 +197,8 @@
             <li id="ref-3"><p>Project Instinct contributors. <em>InstinctLab.</em> Perceptive locomotion environments and policies.</p><p class="reference-links"><a href="https://github.com/project-instinct/instinctlab">Official implementation</a> · <a href="https://project-instinct.github.io/">Project</a></p></li>
             <li id="ref-4"><p>Robotic Systems Lab and ETH AI Center. “Watch Your Step: Anticipated Perception for Humanoid Locomotion.” 2026.</p><p class="reference-links"><a href="https://leggedrobotics.github.io/watch-your-step/">Project</a> · <a href="https://github.com/leggedrobotics/foothold-prediction-model">Official implementation</a></p></li>
             <li id="ref-5"><p>J. Song, C. Meng, and S. Ermon. “Denoising Diffusion Implicit Models.” ICLR, 2021.</p><p class="reference-links"><a href="https://arxiv.org/abs/2010.02502">Paper</a></p></li>
+            <li id="ref-6"><p>B. Zhu, B. Lin, M. Ning, et al. “LanguageBind: Extending Video-Language Pretraining to N-modality by Language-based Semantic Alignment.” ICLR, 2024.</p><p class="reference-links"><a href="https://proceedings.iclr.cc/paper_files/paper/2024/hash/2862ccf01e3843c81623b246895bcc45-Abstract-Conference.html">Paper</a> · <a href="https://huggingface.co/LanguageBind/LanguageBind_Depth">Depth encoder</a></p></li>
+            <li id="ref-7"><p>M. Patel, J. Frey, M. Mittal, et al. “DeFM: Learning Foundation Representations from Depth for Robotics.” arXiv:2601.18923, 2026.</p><p class="reference-links"><a href="https://arxiv.org/abs/2601.18923">Paper</a> · <a href="https://github.com/leggedrobotics/defm">Official implementation</a></p></li>
           </ol>
         </section>
       </article>

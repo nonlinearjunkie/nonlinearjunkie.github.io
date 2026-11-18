@@ -11,14 +11,15 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&amp;family=Manrope:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&amp;display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../styles.css" />
     <link rel="stylesheet" href="./report.css" />
-    <link rel="stylesheet" href="./scene-motion-report.css?v=quantitative-v2" />
+    <link rel="stylesheet" href="./scene-motion-report.css?v=qualitative-v1" />
+    <script src="./scene-motion-videos.js" defer></script>
   </head>
   <body class="report-page">
     <a class="skip-link" href="#report">Skip to report</a>
     <header class="report-header">
       <a class="report-home" href="../index.html#projects">← Back to projects</a>
       <nav aria-label="Report sections">
-        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#experiments">Experiments</a><a href="#references">References</a>
+        <a href="#abstract">Abstract</a><a href="#introduction">Introduction</a><a href="#methodology">Methodology</a><a href="#experiments">Experiments</a><a href="#qualitative-results">Videos</a><a href="#references">References</a>
       </nav>
     </header>
     <main class="report-shell scene-motion-report" id="report">
@@ -187,6 +188,138 @@
           <p>A stair course passes the full test if both feet finish beyond the course, maximum foot penetration stays below 5 cm, and the scored non-foot body joints stay clear of the terrain. Pelvis clearance must remain greater than 0.5 m and at most 1.0 m, with final pelvis-height error below 15 cm.</p>
           <p>LiDAR one-shot completed <strong>16/16 courses</strong>, with no scored non-foot body-joint collisions. However, foot penetration exceeded the limit on 15 courses, leaving <strong>1/16 full successes</strong>. The mean of each course’s maximum foot penetration was <strong>12.74 cm</strong>. Mean absolute final pelvis-height error was <strong>1.18 cm</strong>, and mean distance to the nearest point on the reference path was <strong>22.78 cm</strong>.</p>
           <p>Course completion and final elevation therefore do not capture the remaining foot-placement errors. The terrain ramp also supplies part of the absolute elevation change. These results use small held-out sets and one generation seed; physical tracking is not evaluated here.</p>
+        </section>
+
+        <section class="report-section scene-qualitative" id="qualitative-results" aria-labelledby="qualitative-heading">
+          <h2 id="qualitative-heading"><span>4.</span> Qualitative results</h2>
+          <p>The obstacle rows compare all three approaches using the configurations in Table 2. The stair rows compare depth rolling with LiDAR one-shot. The rolling depth stair clips use a model trained on both obstacles and stairs, with a DeFM ViT-S/14 encoder and three history states.</p>
+          <p>These videos replay generated kinematic motions at their recorded speed. “Play row” starts a comparison from the beginning; each video also has its own controls.</p>
+          <figure class="scene-video-comparison" id="qualitative-obstacle-train" aria-labelledby="caption-obstacle-train">
+            <div class="scene-video-row-heading">
+              <h3>Training obstacles</h3>
+              <div class="scene-video-actions" aria-label="Training obstacles playback">
+                <button type="button" data-row-play aria-label="Play training obstacles comparison">Play row</button>
+                <button type="button" data-row-reset aria-label="Reset training obstacles comparison">Reset</button>
+              </div>
+            </div>
+            <div class="scene-video-scroll" role="region" aria-label="Training obstacles: three methods side by side" tabindex="0">
+              <div class="scene-video-grid">
+                <div class="scene-video-card"><h4>Depth one-shot</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/depth-oneshot-obstacle-train.jpg" width="640" height="360" aria-label="Depth one-shot: training obstacles">
+                    <source src="./videos/scene-motion/depth-oneshot-obstacle-train.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/depth-oneshot-obstacle-train.mp4">Open the depth one-shot clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/depth-oneshot-obstacle-train.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+                <div class="scene-video-card"><h4>Depth rolling</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/depth-rolling-obstacle-train.jpg" width="640" height="360" aria-label="Depth rolling: training obstacles">
+                    <source src="./videos/scene-motion/depth-rolling-obstacle-train.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/depth-rolling-obstacle-train.mp4">Open the depth rolling clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/depth-rolling-obstacle-train.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+                <div class="scene-video-card"><h4>LiDAR one-shot</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/lidar-oneshot-obstacle-train.jpg" width="640" height="360" aria-label="LiDAR one-shot: training obstacles">
+                    <source src="./videos/scene-motion/lidar-oneshot-obstacle-train.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/lidar-oneshot-obstacle-train.mp4">Open the lidar one-shot clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/lidar-oneshot-obstacle-train.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+              </div>
+            </div>
+            <figcaption id="caption-obstacle-train"><strong>Figure 4.</strong> A training scene requiring a rightward detour.</figcaption>
+          </figure>
+          <figure class="scene-video-comparison" id="qualitative-obstacle-val" aria-labelledby="caption-obstacle-val">
+            <div class="scene-video-row-heading">
+              <h3>Validation obstacles</h3>
+              <div class="scene-video-actions" aria-label="Validation obstacles playback">
+                <button type="button" data-row-play aria-label="Play validation obstacles comparison">Play row</button>
+                <button type="button" data-row-reset aria-label="Reset validation obstacles comparison">Reset</button>
+              </div>
+            </div>
+            <div class="scene-video-scroll" role="region" aria-label="Validation obstacles: three methods side by side" tabindex="0">
+              <div class="scene-video-grid">
+                <div class="scene-video-card"><h4>Depth one-shot</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/depth-oneshot-obstacle-val.jpg" width="640" height="360" aria-label="Depth one-shot: validation obstacles">
+                    <source src="./videos/scene-motion/depth-oneshot-obstacle-val.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/depth-oneshot-obstacle-val.mp4">Open the depth one-shot clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/depth-oneshot-obstacle-val.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+                <div class="scene-video-card"><h4>Depth rolling</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/depth-rolling-obstacle-val.jpg" width="640" height="360" aria-label="Depth rolling: validation obstacles">
+                    <source src="./videos/scene-motion/depth-rolling-obstacle-val.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/depth-rolling-obstacle-val.mp4">Open the depth rolling clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/depth-rolling-obstacle-val.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+                <div class="scene-video-card"><h4>LiDAR one-shot</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/lidar-oneshot-obstacle-val.jpg" width="640" height="360" aria-label="LiDAR one-shot: validation obstacles">
+                    <source src="./videos/scene-motion/lidar-oneshot-obstacle-val.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/lidar-oneshot-obstacle-val.mp4">Open the lidar one-shot clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/lidar-oneshot-obstacle-val.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+              </div>
+            </div>
+            <figcaption id="caption-obstacle-val"><strong>Figure 5.</strong> A held-out scene requiring a leftward detour.</figcaption>
+          </figure>
+          <figure class="scene-video-comparison" id="qualitative-stair-train" aria-labelledby="caption-stair-train">
+            <div class="scene-video-row-heading">
+              <h3>Training stairs</h3>
+              <div class="scene-video-actions" aria-label="Training stairs playback">
+                <button type="button" data-row-play aria-label="Play training stairs comparison">Play row</button>
+                <button type="button" data-row-reset aria-label="Reset training stairs comparison">Reset</button>
+              </div>
+            </div>
+            <div class="scene-video-scroll" role="region" aria-label="Training stairs: two methods side by side" tabindex="0">
+              <div class="scene-video-grid scene-video-pair">
+                <div class="scene-video-card"><h4>Depth rolling</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/depth-rolling-stair-train.jpg" width="640" height="360" aria-label="Depth rolling: training stairs">
+                    <source src="./videos/scene-motion/depth-rolling-stair-train.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/depth-rolling-stair-train.mp4">Open the depth rolling clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/depth-rolling-stair-train.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+                <div class="scene-video-card"><h4>LiDAR one-shot</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/lidar-oneshot-stair-train.jpg" width="640" height="360" aria-label="LiDAR one-shot: training stairs">
+                    <source src="./videos/scene-motion/lidar-oneshot-stair-train.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/lidar-oneshot-stair-train.mp4">Open the lidar one-shot clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/lidar-oneshot-stair-train.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+              </div>
+            </div>
+            <figcaption id="caption-stair-train"><strong>Figure 6.</strong> Both methods on the same training up–down stair course.</figcaption>
+          </figure>
+          <figure class="scene-video-comparison" id="qualitative-stair-val" aria-labelledby="caption-stair-val">
+            <div class="scene-video-row-heading">
+              <h3>Validation stairs</h3>
+              <div class="scene-video-actions" aria-label="Validation stairs playback">
+                <button type="button" data-row-play aria-label="Play validation stairs comparison">Play row</button>
+                <button type="button" data-row-reset aria-label="Reset validation stairs comparison">Reset</button>
+              </div>
+            </div>
+            <div class="scene-video-scroll" role="region" aria-label="Validation stairs: two methods side by side" tabindex="0">
+              <div class="scene-video-grid scene-video-pair">
+                <div class="scene-video-card"><h4>Depth rolling</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/depth-rolling-stair-val.jpg" width="640" height="360" aria-label="Depth rolling: validation stairs">
+                    <source src="./videos/scene-motion/depth-rolling-stair-val.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/depth-rolling-stair-val.mp4">Open the depth rolling clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/depth-rolling-stair-val.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+                <div class="scene-video-card"><h4>LiDAR one-shot</h4>
+                  <video controls playsinline muted preload="none" poster="./videos/scene-motion/lidar-oneshot-stair-val.jpg" width="640" height="360" aria-label="LiDAR one-shot: validation stairs">
+                    <source src="./videos/scene-motion/lidar-oneshot-stair-val.mp4" type="video/mp4" />
+                    <a href="./videos/scene-motion/lidar-oneshot-stair-val.mp4">Open the lidar one-shot clip.</a>
+                  </video>
+                  <a class="scene-video-open" href="./videos/scene-motion/lidar-oneshot-stair-val.mp4" target="_blank" rel="noopener">Open clip ↗</a>
+                </div>
+              </div>
+            </div>
+            <figcaption id="caption-stair-val"><strong>Figure 7.</strong> Both methods on the same held-out up–down stair course.</figcaption>
+          </figure>
         </section>
 
         <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">

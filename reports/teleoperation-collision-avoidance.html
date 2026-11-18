@@ -22,6 +22,7 @@
         <a href="#introduction">Introduction</a>
         <a href="#methodology">Methodology</a>
         <a href="#experiments">Experiments</a>
+        <a href="#closing-remarks">Closing remarks</a>
         <a href="#references">References</a>
       </nav>
     </header>
@@ -251,6 +252,13 @@
             <li><strong>Clearance depends on the model and calibration.</strong> It is calculated from joint encoders, padded spheres, and a camera pose with roughly 1–2 cm uncertainty. Physical tracking error also separates commanded clearance from measured-pose clearance.</li>
             <li><strong>Self-collision limits can also stop motion.</strong> Those stops are excluded from the obstacle-stop totals. The IK mesh-sphere motion analysis is limited to its first 40 s because the existing arm-to-arm check affected the remaining recording.</li>
           </ul>
+        </section>
+
+        <section class="report-section" id="closing-remarks" aria-labelledby="closing-remarks-heading">
+          <h2 id="closing-remarks-heading"><span>4.</span> Closing remarks</h2>
+          <p>Among the configurations tested so far, <strong>obstacle constraints inside IK with mesh-fitted collision spheres and a final collision guard</strong> gave the most useful balance of obstacle avoidance, access to the workspace, and computational cost. In this run, the hands reached into the bins, obstacle-related stops were short, and the final guard did not reject any commands. The processing cost was also compatible with the approximately 110 Hz control loop.</p>
+          <p>The comparison highlights why both the solver and the collision representation matter. Constraints inside IK let nearby obstacles influence how motion is generated, while spheres fitted around the robot mesh preserve space that the larger box-cover spheres unnecessarily block. The guard alone could repeatedly reject proposed movements, and the coarser representation prevented access through the opening.</p>
+          <p>These observations make <strong>IK with mesh-fitted spheres the strongest starting point for further evaluation in this setup</strong>. The brief overlap at measured joint positions, command-tracking error, and changes to the static scene still need to be addressed. Repeated trials across more scenes are needed to establish how consistently this behaviour holds.</p>
         </section>
 
         <section class="report-section report-references" id="references" aria-labelledby="references-heading" role="doc-bibliography">

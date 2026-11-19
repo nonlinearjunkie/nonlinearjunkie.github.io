@@ -184,7 +184,7 @@
         <section class="report-section experiments" id="experiments" aria-labelledby="experiments-heading">
           <h2 id="experiments-heading">3. Experiments</h2>
           <h3>Task success in simulation</h3>
-          <p>We evaluate the policies after <strong>10,000 training updates</strong> on <strong>20 saved starts per task</strong>, giving <strong>60 trials overall</strong>. Every comparison uses the same initial states, seeds, and task horizons. Success is determined by the simulator’s task-completion checks.</p>
+          <p>For the BC-Transformer comparison, we evaluate the policies after <strong>10,000 training updates</strong> on <strong>20 saved starts per task</strong>, giving <strong>60 trials overall</strong>. The two runs use the same initial states, seeds, and task horizons. Success is determined by the simulator’s task-completion checks.</p>
           <p>BC+RoboJEPA uses <strong>dynamic gradient-ratio weighting</strong> for the anchored consequence loss.</p>
 
           <figure class="method-figure results-figure">
@@ -208,6 +208,22 @@
           </div>
           <p>BC+RoboJEPA completes 12 more trials than BC-only, a <strong>20-percentage-point increase</strong> in overall success. It improves performance on all three tasks, although cabinet placement remains difficult at 3/20 successes.</p>
           <p>These results use one training seed and 60 matched evaluation trials. More seeds and tasks are needed to assess how consistently the improvement holds.</p>
+
+          <h3 id="diffusion-policy-results">Transfer across policy architectures</h3>
+          <p>We also evaluate the approach with a <strong>diffusion policy (DP)</strong>. Adaptive DP+RoboJEPA improves overall success from <strong>18/60 (30%)</strong> to <strong>24/60 (40%)</strong>, a <strong>10-percentage-point increase</strong>. Together with the BC-Transformer results, this provides evidence that the benefit of world-model supervision extends across policy architectures.</p>
+          <div class="report-table-wrap" role="region" aria-label="Diffusion policy task success" tabindex="0">
+            <table class="report-table results-table">
+              <caption>Diffusion policy comparison</caption>
+              <thead><tr><th scope="col">Task</th><th scope="col">DP-only</th><th scope="col">Adaptive DP+RoboJEPA, L1</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Door</th><td>16/20 — 80%</td><td><strong>17/20 — 85%</strong></td></tr>
+                <tr><th scope="row">Coffee button</th><td>2/20 — 10%</td><td><strong>7/20 — 35%</strong></td></tr>
+                <tr><th scope="row">Cabinet</th><td>0/20 — 0%</td><td>0/20 — 0%</td></tr>
+              </tbody>
+              <tfoot><tr><th scope="row">Overall</th><td>18/60 — 30%</td><td><strong>24/60 — 40%</strong></td></tr></tfoot>
+            </table>
+          </div>
+          <p>The improvement comes from the door and coffee-button tasks; cabinet placement remains at 0/20 for both policies.</p>
 
           <div class="qualitative-evaluation" id="qualitative-evaluation">
             <h3>Qualitative comparisons</h3>
@@ -301,9 +317,9 @@
 
         <section class="report-section" id="future-work" aria-labelledby="future-work-heading">
           <h2 id="future-work-heading">5. Future Work</h2>
-          <p>Our next goal is to test whether the benefit extends beyond the current policy and three-task setting.</p>
+          <p>Our next goal is to test whether the benefit extends beyond the current policies and three-task setting.</p>
           <ul>
-            <li><strong>Multiple policies.</strong> Apply the same anchored supervision to other policy architectures, including diffusion policies, while retaining each policy’s native training loss.</li>
+            <li><strong>Additional policy architectures.</strong> Extend the BC-Transformer and diffusion-policy comparisons to more architectures while retaining each policy’s native training loss.</li>
             <li><strong>Multiple training seeds.</strong> Repeat matched baseline and augmented runs with several random seeds, and report average task success and variability.</li>
             <li><strong>More tasks and generalization.</strong> Expand the task set and evaluate held-out scenes, objects, and task variations to test whether the improvement transfers beyond familiar training conditions.</li>
             <li><strong>Real-world data.</strong> Test the method on a real-robot demonstration dataset, then evaluate on real hardware.</li>

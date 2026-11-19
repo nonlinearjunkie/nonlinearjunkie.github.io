@@ -210,11 +210,11 @@
           <p>These results use one training seed and 60 matched evaluation trials. More seeds and tasks are needed to assess how consistently the improvement holds.</p>
 
           <h3 id="diffusion-policy-results">Transfer across policy architectures</h3>
-          <p>We also evaluate the approach with a <strong>diffusion policy (DP)</strong>. Adaptive DP+RoboJEPA improves overall success from <strong>18/60 (30%)</strong> to <strong>24/60 (40%)</strong>, a <strong>10-percentage-point increase</strong>. Together with the BC-Transformer results, this provides evidence that the benefit of world-model supervision extends across policy architectures.</p>
+          <p>We also evaluate the approach with a <strong>diffusion policy (DP)</strong>. DP + RoboJEPA improves overall success from <strong>18/60 (30%)</strong> to <strong>24/60 (40%)</strong>, a <strong>10-percentage-point increase</strong>. Together with the BC-Transformer results, this provides evidence that the benefit of world-model supervision extends across policy architectures.</p>
           <div class="report-table-wrap" role="region" aria-label="Diffusion policy task success" tabindex="0">
             <table class="report-table results-table">
               <caption>Diffusion policy comparison</caption>
-              <thead><tr><th scope="col">Task</th><th scope="col">DP-only</th><th scope="col">Adaptive DP+RoboJEPA, L1</th></tr></thead>
+              <thead><tr><th scope="col">Task</th><th scope="col">DP-only</th><th scope="col">DP + RoboJEPA</th></tr></thead>
               <tbody>
                 <tr><th scope="row">Door</th><td>16/20 — 80%</td><td><strong>17/20 — 85%</strong></td></tr>
                 <tr><th scope="row">Coffee button</th><td>2/20 — 10%</td><td><strong>7/20 — 35%</strong></td></tr>

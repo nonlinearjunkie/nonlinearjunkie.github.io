@@ -40,7 +40,7 @@
         <section class="report-section report-abstract" id="abstract" aria-labelledby="abstract-heading">
           <h2 id="abstract-heading">Abstract</h2>
           <p>Can a pretrained action-conditioned world model improve a robot policy by supervising the predicted consequences of its actions? We investigate this question by augmenting behavior cloning (BC) with an <strong>anchored consequence loss</strong>. Given the same current observation, a frozen RoboJEPA model predicts future latents for two action sequences: one proposed by the policy and one recorded in a demonstration. We minimize the difference between these predictions alongside the policy’s standard imitation loss. Gradients pass through the frozen world model to update the policy; the world model is used only during training.</p>
-          <p>We evaluate this approach using 900 demonstrations across three RoboCasa manipulation tasks and 60 matched simulator starting states. After 10,000 policy updates, BC+RoboJEPA achieves <strong>26/60 successes (43.3%)</strong>, compared with <strong>14/60 (23.3%)</strong> for BC-only, an improvement of 20 percentage points. These results offer early evidence that supervision from predicted action consequences can improve imitation learning.</p>
+          <p>We evaluate this approach using 900 demonstrations across three RoboCasa manipulation tasks and 60 matched simulator starting states. After 10,000 policy updates, BC+RoboJEPA with fixed-weight L1 supervision (λ = 10) achieves <strong>26/60 successes (43.3%)</strong>, compared with <strong>14/60 (23.3%)</strong> for BC-only, an improvement of 20 percentage points. These results offer early evidence that supervision from predicted action consequences can improve imitation learning.</p>
         </section>
 
         <section class="report-section" id="introduction" aria-labelledby="introduction-heading">
@@ -51,7 +51,7 @@
           <p>Directly comparing a predicted future with the actual future observation can penalize the policy for errors made by the world model. Even the demonstrated actions may produce an imperfect forecast. We therefore use the world model’s prediction under the <strong>recorded actions</strong> as the reference. From the same current observation, we compare the predicted consequences of the policy’s actions with those of the demonstrated actions. We call this an <em>anchored consequence loss</em>.</p>
           <p>This construction has a useful property: when the proposed actions equal the recorded actions, the consequence loss is zero, even if the world model’s forecast differs from the actual future. It does not guarantee physically accurate predictions or eliminate action-dependent model errors. Instead, it provides a model-based measure of consequence similarity that complements ordinary action imitation.</p>
           <p>We test the approach on three tasks in RoboCasa <a class="citation" href="#ref-3" role="doc-biblioref" aria-label="Reference 3: Nasiriany and colleagues, 2024">[3]</a>: closing a cabinet door, pressing a coffee-machine button, and placing an object from a counter into a cabinet. Both policies use the same 900 training demonstrations, initial weights, and optimizer settings. Evaluation restores the same 20 held-out demonstration starts per task, with matched seeds and rollout horizons. The world model and its visual encoder remain frozen throughout policy training, and deployment uses only the trained policy.</p>
-          <p>We balance the two losses using dynamic gradient-ratio weighting. At 10,000 updates, BC+RoboJEPA improves aggregate success from 14/60 to 26/60, with gains on all three tasks. This is a comparison at a matched training budget; it does not establish an improvement in learning speed.</p>
+          <p>We compare fixed loss weighting with dynamic gradient-ratio weighting. With fixed λ = 10 and L1 consequence loss, BC+RoboJEPA improves aggregate success from 14/60 to 26/60 at 10,000 updates, with gains on all three tasks. We also compare L1 and mean squared error under matched adaptive weighting for both BC-Transformer and diffusion policy. This is a comparison at a matched training budget; it does not establish an improvement in learning speed.</p>
           <p>This report describes the method and experimental comparison. Further experiments are needed to establish whether the benefit persists across training seeds, tasks, and policy architectures.</p>
         </section>
 
@@ -142,10 +142,11 @@
             <span><var>L</var><sub>total</sub> = <var>L</var><sub>BC</sub> + <var>λ</var><sub>t</sub> <var>L</var><sub>anchor</sub></span>
           </div>
 
-          <h3 id="method-weighting">2.6 Dynamic loss weighting</h3>
+          <h3 id="method-weighting">2.6 Fixed and dynamic loss weighting</h3>
+          <p>Our first BC+RoboJEPA comparison uses a <strong>fixed λ = 10</strong>. We then test <strong>adaptive weighting</strong>, described below. The L1/MSE ablation uses this same adaptive rule for both distances; each results table identifies its weighting setting.</p>
           <p>BC teaches the policy to copy demonstrated actions. The anchored loss adds guidance about their predicted effects. These losses measure different things, so their numerical values are not directly comparable. Giving them equal weights would not give them equal influence on training.</p>
           <p>What matters is how strongly each loss pushes the policy to change—its <strong>gradient magnitude</strong>. If the consequence gradient is too large, it can overwhelm the demonstration signal, even though the world model is imperfect. If it is too small, the extra supervision has little effect. This balance can also change as the policy learns.</p>
-          <p>We therefore recalculate the weight at every update: turn it down when the consequence gradient is strong, and up when it is weak relative to BC. This keeps imitation as the main signal while giving the world model a controlled supporting role.</p>
+          <p>In the adaptive runs, we recalculate the weight at every update: turn it down when the consequence gradient is strong, and up when it is weak relative to BC. This keeps imitation as the main signal while giving the world model a controlled supporting role.</p>
           <p>We first measure the two gradients over all trainable policy parameters, before gradient clipping:</p>
           <div class="report-equation" role="math" aria-label="g BC is the policy gradient of BC loss, and g anchor is the policy gradient of anchored loss.">
             <span><var>g</var><sub>BC</sub> = ∇<sub>θ</sub><var>L</var><sub>BC</sub> &nbsp;;&nbsp; <var>g</var><sub>anchor</sub> = ∇<sub>θ</sub><var>L</var><sub>anchor</sub></span>
@@ -185,18 +186,18 @@
           <h2 id="experiments-heading">3. Experiments</h2>
           <h3>Task success in simulation</h3>
           <p>For the BC-Transformer comparison, we evaluate the policies after <strong>10,000 training updates</strong> on <strong>20 saved starts per task</strong>, giving <strong>60 trials overall</strong>. The two runs use the same initial states, seeds, and task horizons. Success is determined by the simulator’s task-completion checks.</p>
-          <p>BC+RoboJEPA uses <strong>dynamic gradient-ratio weighting</strong> for the anchored consequence loss.</p>
+          <p>This first comparison uses <strong>L1 anchored consequence loss with fixed λ = 10</strong>. The adaptive L1/MSE comparison follows below.</p>
 
           <figure class="method-figure results-figure">
             <a href="./figures/task-success-10k.svg" target="_blank" rel="noopener" aria-label="Open the task-success chart at full size">
-              <img src="./figures/task-success-10k.svg" alt="Success after 10,000 updates: BC-only versus BC plus RoboJEPA with dynamic weighting. Door: 65 versus 80 percent. Coffee button: 0 versus 35 percent. Cabinet placement: 5 versus 15 percent. Overall: 23.3 versus 43.3 percent." width="1104" height="660" loading="lazy" />
+              <img src="./figures/task-success-10k.svg" alt="Success after 10,000 updates: BC-only versus BC plus RoboJEPA with L1 loss and fixed lambda 10. Door: 65 versus 80 percent. Coffee button: 0 versus 35 percent. Cabinet placement: 5 versus 15 percent. Overall: 23.3 versus 43.3 percent." width="1104" height="660" loading="lazy" />
             </a>
-            <figcaption><strong>Figure 5.</strong> Task success after 10,000 policy updates on matched simulator starts. Labels show successful trials. BC+RoboJEPA uses dynamic weighting.</figcaption>
+            <figcaption><strong>Figure 5.</strong> Task success after 10,000 policy updates on matched simulator starts. Labels show successful trials. BC+RoboJEPA uses L1 loss with fixed λ = 10.</figcaption>
           </figure>
 
           <div class="report-table-wrap" role="region" aria-label="Task success after 10,000 updates" tabindex="0">
             <table class="report-table results-table">
-              <caption>10,000 policy updates · Dynamic weighting for BC+RoboJEPA</caption>
+              <caption>10,000 policy updates · L1 loss, fixed λ = 10 for BC+RoboJEPA</caption>
               <thead><tr><th scope="col">Task</th><th scope="col">BC-only</th><th scope="col">BC+RoboJEPA</th></tr></thead>
               <tbody>
                 <tr><th scope="row">Close cabinet door</th><td>13/20 · 65%</td><td><strong>16/20 · 80%</strong></td></tr>
@@ -209,25 +210,47 @@
           <p>BC+RoboJEPA completes 12 more trials than BC-only, a <strong>20-percentage-point increase</strong> in overall success. It improves performance on all three tasks, although cabinet placement remains difficult at 3/20 successes.</p>
           <p>These results use one training seed and 60 matched evaluation trials. More seeds and tasks are needed to assess how consistently the improvement holds.</p>
 
-          <h3 id="diffusion-policy-results">Transfer across policy architectures</h3>
-          <p>We also evaluate the approach with a <strong>diffusion policy (DP)</strong>. DP + RoboJEPA improves overall success from <strong>18/60 (30%)</strong> to <strong>24/60 (40%)</strong>, a <strong>10-percentage-point increase</strong>. Together with the BC-Transformer results, this provides evidence that the benefit of world-model supervision extends across policy architectures.</p>
-          <div class="report-table-wrap" role="region" aria-label="Diffusion policy task success" tabindex="0">
+          <h3 id="diffusion-policy-results">L1 vs. L2 consequence loss across policies</h3>
+          <p id="loss-distance-ablation">Does the choice of latent distance change task success? We compare <strong>L1 (mean absolute error)</strong> with <strong>MSE (mean squared error, or squared L2)</strong> in the anchored loss. Both compare the policy-action forecast with the detached recorded-action forecast from the same frozen RoboJEPA.</p>
+          <div class="report-equation" role="math" aria-label="L1 averages absolute latent differences; MSE averages squared latent differences.">
+            <span><var>L</var><sub>L1</sub> = mean(|<var>ẑ</var><sub>policy</sub> − sg(<var>ẑ</var><sub>ref</sub>)|)<br/><var>L</var><sub>MSE</sub> = mean((<var>ẑ</var><sub>policy</sub> − sg(<var>ẑ</var><sub>ref</sub>))<sup>2</sup>)</span>
+          </div>
+          <p>MSE gives larger feature mismatches more weight; it is used directly, without taking a square root. We preserve each policy’s native imitation loss: Gaussian-mixture NLL for BC-Transformer and noise-prediction MSE for diffusion policy. Only the <em>additional consequence distance</em> changes.</p>
+          <p>Within each architecture, L1 and MSE use matching initial weights, training seed 123, the same 900 demonstrations, frozen teacher, four-command forecast, and <strong>25% adaptive gradient-strength target</strong>. Every checkpoint is evaluated after <strong>10,000 updates</strong> on the same 60 saved starts, seeds, and task horizons. The native-only policy is included as the reference.</p>
+
+          <h4>BC-Transformer: 10,000 updates</h4>
+          <div class="report-table-wrap" role="region" aria-label="BC-Transformer L1 versus MSE at 10,000 updates" tabindex="0">
             <table class="report-table results-table">
-              <caption>Diffusion policy comparison</caption>
-              <thead><tr><th scope="col">Task</th><th scope="col">DP-only</th><th scope="col">DP + RoboJEPA</th></tr></thead>
+              <caption>Successes / trials · L1 and MSE both use the 25% adaptive gradient target</caption>
+              <thead><tr><th scope="col">Task</th><th scope="col">BC-only</th><th scope="col">+RoboJEPA L1</th><th scope="col">+RoboJEPA MSE</th></tr></thead>
               <tbody>
-                <tr><th scope="row">Door</th><td>16/20 — 80%</td><td><strong>17/20 — 85%</strong></td></tr>
-                <tr><th scope="row">Coffee button</th><td>2/20 — 10%</td><td><strong>7/20 — 35%</strong></td></tr>
-                <tr><th scope="row">Cabinet</th><td>0/20 — 0%</td><td>0/20 — 0%</td></tr>
+                <tr><th scope="row">Door closing</th><td>13/20 · 65%</td><td>17/20 · 85%</td><td>17/20 · 85%</td></tr>
+                <tr><th scope="row">Coffee button</th><td>0/20 · 0%</td><td>5/20 · 25%</td><td>2/20 · 10%</td></tr>
+                <tr><th scope="row">Counter-to-cabinet</th><td>1/20 · 5%</td><td>1/20 · 5%</td><td>1/20 · 5%</td></tr>
               </tbody>
-              <tfoot><tr><th scope="row">Overall</th><td>18/60 — 30%</td><td><strong>24/60 — 40%</strong></td></tr></tfoot>
+              <tfoot><tr><th scope="row">Overall</th><td><strong>14/60 · 23.3%</strong></td><td><strong>23/60 · 38.3%</strong></td><td><strong>20/60 · 33.3%</strong></td></tr></tfoot>
             </table>
           </div>
-          <p>The improvement comes from the door and coffee-button tasks; cabinet placement remains at 0/20 for both policies.</p>
+
+          <h4>Diffusion policy: 10,000 updates</h4>
+          <div class="report-table-wrap" role="region" aria-label="Diffusion policy L1 versus MSE at 10,000 updates" tabindex="0">
+            <table class="report-table results-table">
+              <caption>Successes / trials · L1 and MSE both use the 25% adaptive gradient target</caption>
+              <thead><tr><th scope="col">Task</th><th scope="col">DP-only</th><th scope="col">+RoboJEPA L1</th><th scope="col">+RoboJEPA MSE</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Door closing</th><td>16/20 · 80%</td><td>17/20 · 85%</td><td>14/20 · 70%</td></tr>
+                <tr><th scope="row">Coffee button</th><td>2/20 · 10%</td><td>7/20 · 35%</td><td>6/20 · 30%</td></tr>
+                <tr><th scope="row">Counter-to-cabinet</th><td>0/20 · 0%</td><td>0/20 · 0%</td><td>0/20 · 0%</td></tr>
+              </tbody>
+              <tfoot><tr><th scope="row">Overall</th><td><strong>18/60 · 30.0%</strong></td><td><strong>24/60 · 40.0%</strong></td><td><strong>20/60 · 33.3%</strong></td></tr></tfoot>
+            </table>
+          </div>
+          <p><strong>L1 performs better than MSE at 10k in both policy comparisons:</strong> 23 vs. 20 successes for BC-Transformer, and 24 vs. 20 for diffusion policy. For BC, the difference is on the coffee-button task. For diffusion policy, it comes from door closing and coffee-button pressing.</p>
+          <p>Both distances exceed their native-only baseline in overall success at this checkpoint. These single-seed comparisons favor L1 for the next experiment; they do not establish that L1 will always outperform MSE. The earlier <strong>26/60 BC result uses fixed λ = 10</strong> and is separate from this matched adaptive-loss comparison.</p>
 
           <div class="qualitative-evaluation" id="qualitative-evaluation">
             <h3>Qualitative comparisons</h3>
-            <p>The following are selected matched success/failure examples from the three tasks. All policies use 10k-update checkpoints; within each pair, the initial state, seed, camera, and playback speed are matched.</p>
+            <p>The following are selected matched success/failure examples from the three tasks. These videos compare BC-only with the fixed-λ = 10, L1 BC+RoboJEPA run. All policies use 10k-update checkpoints; within each pair, the initial state, seed, camera, and playback speed are matched.</p>
             <h4 class="qualitative-task-title" id="qualitative-cabinet">Counter-to-cabinet placement</h4>
             <p>Instruction: <em>“Pick the mango from the counter and place it in the cabinet.”</em> Both 10k-update policies use the same recorded initial state and seed, with a 500-step evaluation horizon.</p>
             <figure class="qualitative-figure" aria-labelledby="qualitative-caption">
@@ -312,7 +335,7 @@
         <section class="report-section" id="conclusion" aria-labelledby="conclusion-heading">
           <h2 id="conclusion-heading">4. Conclusion</h2>
           <p>We investigated whether a frozen action-conditioned world model can provide useful supervision for imitation learning. Our anchored consequence loss compares the predicted effects of policy actions with those of demonstrated actions, while preserving the policy’s native imitation objective.</p>
-          <p>In our three-task RoboCasa experiment, BC+RoboJEPA achieves <strong>26/60 successes</strong> after 10,000 updates, compared with <strong>14/60 for BC-only</strong>. This result supports further study of predicted consequences as a training signal. The world model is needed only during training; inference uses the policy alone.</p>
+          <p>In our three-task RoboCasa experiment, BC+RoboJEPA with fixed λ = 10 and L1 loss achieves <strong>26/60 successes</strong> after 10,000 updates, compared with <strong>14/60 for BC-only</strong>. This result supports further study of predicted consequences as a training signal. The world model is needed only during training; inference uses the policy alone.</p>
         </section>
 
         <section class="report-section" id="future-work" aria-labelledby="future-work-heading">

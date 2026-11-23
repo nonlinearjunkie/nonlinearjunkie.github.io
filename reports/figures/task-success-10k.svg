@@ -260,7 +260,7 @@ z
 " style="fill: #2864b3"/>
    </g>
    <g id="text_23">
-    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Arial', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #26333f" x="321.018094" y="378.657656" transform="rotate(-0 321.018094 378.657656)">BC+RoboJEPA (dynamic weighting)</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Arial', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start; fill: #26333f" x="321.018094" y="378.657656" transform="rotate(-0 321.018094 378.657656)">BC+RoboJEPA (fixed λ = 10)</text>
    </g>
   </g>
  </g>

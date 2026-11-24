@@ -248,6 +248,23 @@
           <p><strong>L1 performs better than MSE at 10k in both policy comparisons:</strong> 23 vs. 20 successes for BC-Transformer, and 24 vs. 20 for diffusion policy. For BC, the difference is on the coffee-button task. For diffusion policy, it comes from door closing and coffee-button pressing.</p>
           <p>Both distances exceed their native-only baseline in overall success at this checkpoint. These single-seed comparisons favor L1 for the next experiment; they do not establish that L1 will always outperform MSE. The earlier <strong>26/60 BC result uses fixed λ = 10</strong> and is separate from this matched adaptive-loss comparison.</p>
 
+          <h3 id="gradient-ratio-ablation">Adaptive gradient target: 25% vs. 30%</h3>
+          <p>We test whether a stronger consequence signal helps <strong>BC+RoboJEPA</strong>. Both runs use <strong>anchored L1 loss</strong>, the same frozen world model, matching initial policy weights, training seed 123, and 900 demonstrations. We change the adaptive gradient target from <strong>25% to 30%</strong> and evaluate both policies at <strong>10,000 updates</strong> on the same 60 saved starts, seeds, and task horizons.</p>
+          <p>The percentage specifies the target magnitude of the weighted consequence gradient relative to the native BC gradient, before clipping. It is not a percentage of the total loss; the adaptive rule is defined in <a href="#method-weighting">Section 2.6</a>.</p>
+          <div class="report-table-wrap" role="region" aria-label="BC plus RoboJEPA 25 versus 30 percent gradient target at 10,000 updates" tabindex="0">
+            <table class="report-table results-table">
+              <caption>BC+RoboJEPA · Anchored L1 · 10,000 updates · Successes / trials</caption>
+              <thead><tr><th scope="col">Task</th><th scope="col">25% target</th><th scope="col">30% target</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Door closing</th><td>17/20 · 85%</td><td>17/20 · 85%</td></tr>
+                <tr><th scope="row">Coffee button</th><td>5/20 · 25%</td><td>2/20 · 10%</td></tr>
+                <tr><th scope="row">Counter-to-cabinet</th><td>1/20 · 5%</td><td>1/20 · 5%</td></tr>
+              </tbody>
+              <tfoot><tr><th scope="row">Overall</th><td><strong>23/60 · 38.3%</strong></td><td><strong>20/60 · 33.3%</strong></td></tr></tfoot>
+            </table>
+          </div>
+          <p>Increasing the target to 30% did not improve success in this 10k, single-seed comparison. Overall success fell by <strong>three trials, or 5 percentage points</strong>, entirely on the coffee-button task; door and cabinet success counts were unchanged.</p>
+
           <div class="qualitative-evaluation" id="qualitative-evaluation">
             <h3>Qualitative comparisons</h3>
             <p>The following are selected matched success/failure examples from the three tasks. These videos compare BC-only with the fixed-λ = 10, L1 BC+RoboJEPA run. All policies use 10k-update checkpoints; within each pair, the initial state, seed, camera, and playback speed are matched.</p>
